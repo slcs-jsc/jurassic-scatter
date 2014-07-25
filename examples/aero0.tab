@@ -1,0 +1,10 @@
+# $1 = aerosol layer top altitude [km]
+# $2 = aerosol layer bottom altitude [km]
+# $3 = transition layer thickness [km]
+# $4 = source for optical properties
+# $5 = refractive index file
+# $6 = particle concentration of log-normal mode [cm-3]
+# $7 = median radius of log-normal mode [mum]
+# $8 = width of log-normal mode
+
+9.0    8.0  0.1  mie  ../refrac/ice-266K-warren.dat  0.5   20.0   1.4

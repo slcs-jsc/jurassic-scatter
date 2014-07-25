@@ -1,0 +1,46 @@
+This is BibTeX, Version 0.99d (TeX Live 2012/TeX Live for SUSE Linux)
+Capacity: max_strings=35307, hash_size=35307, hash_prime=30011
+The top-level auxiliary file: jurassic.aux
+The style file: plainnat.bst
+Database file #1: /home/zam/sgrie/1/Literatur/Literatur.bib.bib
+You've used 25 entries,
+            2773 wiz_defined-function locations,
+            870 strings with 12227 characters,
+and the built_in function-call counts, 15534 in all, are:
+= -- 1299
+> -- 1370
+< -- 12
++ -- 460
+- -- 435
+* -- 1457
+:= -- 2528
+add.period$ -- 88
+call.type$ -- 25
+change.case$ -- 217
+chr.to.int$ -- 25
+cite$ -- 50
+duplicate$ -- 502
+empty$ -- 931
+format.name$ -- 468
+if$ -- 3103
+int.to.chr$ -- 1
+int.to.str$ -- 1
+missing$ -- 22
+newline$ -- 145
+num.names$ -- 100
+pop$ -- 393
+preamble$ -- 1
+purify$ -- 195
+quote$ -- 0
+skip$ -- 449
+stack$ -- 0
+substring$ -- 492
+swap$ -- 29
+text.length$ -- 3
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 270
+warning$ -- 0
+while$ -- 105
+width$ -- 0
+write$ -- 358

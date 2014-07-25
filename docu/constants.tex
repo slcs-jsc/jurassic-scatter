@@ -1,0 +1,62 @@
+\section{Physical Constants}
+
+\begin{table*}[!h]
+\caption{Physical constants in \texttt{pirat.h}.}
+\begin{tabular}{|l|l|l|}
+\hline
+\cellcolor[RGB]{188,188,188}{name} & \cellcolor[RGB]{188,188,188}{purpose} & 
+\cellcolor[RGB]{188,188,188}{value} \\
+\hline
+\hline
+C1        & First spectroscopic constant (c$_1$ = $2hc^2$) [W/(m$^2$ sr cm$^{-4}$)] & 1.19104259e-8\\
+C2        & Second spectroscopic constant (c$_2$ = $hc$/$k$) [K/cm$^{-1}$]         & 1.43877506 \\
+P0        & Standard pressure [hPa]                                         & 1013.25 \\
+RE        & Mean radius of Earth [km]                                       & 6367.421 \\
+ME        & Mass of Earth [kg]                                              & 5.976e24\\
+SCA\_TSUN & temperature of the sun [K]                                      & 5780 \\
+\hline
+\end{tabular}
+\end{table*} 
+
+\section{Dimensions}
+\begin{table*}[!h]
+\caption{Dimensions in \texttt{control.h}.}
+\begin{tabular}{|l|l|l|}
+\hline
+\cellcolor[RGB]{188,188,188}{name} & \cellcolor[RGB]{188,188,188}{purpose} & 
+\cellcolor[RGB]{188,188,188}{value}  \\
+\hline
+\hline
+LEN      & Maximum length of ASCII data lines            & 5000 \\
+MMAX     & Maximum size of measurement vector            & (NRMAX$\times$NDMAX) \\
+NMAX     & Maximum size of state vector                  & (NQMAX$\times$NPMAX) \\
+NQMAX    & Maximum number of quantities                  & (2+NGMAX+NWMAX) \\
+NWMAX    & Maximum number of spectral windows            & 5 \\
+NDMAX    & Maximum number of radiance channels           & 50 \\
+NGMAX    & Maximum number of emitters                    & 15 \\
+NLOS     & Maximum number of LOS points                  & 1000 \\
+NPMAX    & Maximum number of atmospheric data points     & 1000 \\
+NRMAX    & Maximum number of ray paths                   & 1000 \\
+NSHAPE   & Maximum number of shape function grid points  & 10000 \\
+NFOV     & Number of ray paths used for FOV calculations & 5 \\
+TBLNPMAX & Maximum number of pressure levels in          & 40 \\
+         & emissivity tables                             & \\
+TBLNSMAX & Maximum number of source function             & 1201 \\
+         & temperature levels                            & \\
+TBLNTMAX & Maximum number of temperatures in             & 30 \\
+         & emissivity tables                             & \\ 
+TBLNUMAX & Maximum number of column densities in         & 320 \\
+         & emissivity tables                             & \\ 
+SCAMOD   & Maximum number of scattering models           & 15 \\
+NLMAX    & Maximum number of aerosol/cloud layers        & 10 \\
+NRAD     & Number of points for Gauss-Hermite            & 170 \\
+         & integration                                   & \\
+NTHETA   & Number of scattering angles                   & 181 \\
+         & (from 0 to 180 deg)                           & \\
+REFMAX   & Maximum number of refractive indices          & 5000 \\
+\hline
+\end{tabular}
+\end{table*} 
+
+
+

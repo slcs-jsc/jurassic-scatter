@@ -1,0 +1,99 @@
+\documentclass[12pt,a4paper,titlepage,openright,twoside]{book}
+%\documentclass[12pt,a4paper,titlepage,draft]{book}
+%\documentclass[12pt,a4paper,titlepage,draft]{article}
+\usepackage{amsmath, amssymb, dcolumn, amsxtra, alltt}
+
+\usepackage{latexsym,graphicx}
+\usepackage{psfrag}
+\usepackage{epsfig,multicol}
+\usepackage{float}
+
+\usepackage{parskip}
+\usepackage{multirow}
+%\usepackage{lscape} 
+%\usepackage{url} 
+
+%\usepackage{pdflscape}
+\usepackage{hyperref}
+%\usepackage{breakurl}
+
+\usepackage[british,ngerman]{babel}
+\usepackage[round,authoryear]{natbib}
+\usepackage[bf]{caption2}
+
+\usepackage{color}
+\usepackage[table]{xcolor}
+
+\usepackage{minted} %code syntax highlightning
+
+\setlength{\evensidemargin}{0.3cm}
+\setlength{\textwidth}{15.5cm}
+
+% \renewcommand{\captionfont}{\small\itshape}
+\renewcommand{\captionfont}{\itshape}
+
+\definecolor{pink}{RGB}{255,0,155}
+\definecolor{lightblue}{RGB}{153,255,255}
+\definecolor{lightorange}{RGB}{255,200,0}
+\definecolor{peach}{RGB}{255,204,153}
+\definecolor{mediumblue}{RGB}{00,200,200}
+\newcommand{\ud}{\,\mathrm{d}}
+\newcommand{\tcb}{\cellcolor{lightblue} } 
+\newcommand{\tcp}{\cellcolor{pink} } 
+\newcommand{\tco}{\cellcolor{lightorange} } 
+\newcommand{\tcmb}{\textcolor{mediumblue} } 
+
+\newcommand{\todo}{\textcolor{red}{\large{TO DO}}}
+
+\begin{document}
+\selectlanguage{british}
+
+\frontmatter
+\author{SimLab Climate, JSC, FZJ, J\"u{}lich, Germany \footnote{Contact: l.hoffmann@fz-juelich.de, s.griessbach@fz-juelich.de}}
+\title{JURASSIC - High-Q}
+%\subtitle{-- Monograph --}
+\maketitle
+
+\tableofcontents
+
+\mainmatter
+
+\chapter{Introduction}
+\input{intro.tex}
+
+\chapter{Getting Started}
+\input{install.tex}
+
+\chapter{Input Files}
+\label{chap:input}
+\input{input.tex}
+
+\chapter{Output Files}
+\label{chap:output}
+\input{output.tex}
+
+\chapter{Tools}
+\label{chap:tools}
+\input{tools.tex}
+
+\chapter{Documentation}
+\label{chap:docu}
+\input{docu.tex}
+
+\begin{appendix}
+\chapter{Lists of Constants and Dimensions}
+%\label{chap:Appendix}
+\input{constants.tex}
+\end{appendix}
+
+
+\addcontentsline{toc}{chapter}{Bibliography}
+
+\backmatter
+\bibliography{/home/zam/sgrie/1/Literatur/Literatur.bib}
+\bibliographystyle{plainnat}
+%\bibliographystyle{copernicus}
+
+%\input{acknowledgement.tex}
+
+\end{document}

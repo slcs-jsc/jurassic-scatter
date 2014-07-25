@@ -1,0 +1,33 @@
+\section{brightness}
+
+\section{climatology}
+\label{sec:ToolClimatology}
+The \texttt{climatology} tool can be used to generate the atmosphere file (\texttt{atm.tab}). This tool interpolates the chosen climatology from \citet{Remedios2007} onto the defined altitude grid and adds the trace gases in the same order as given in the control file. One can choose between polar winter (pwin), polar summer (psum), midlatitude (midl) and equatorial (equ) atmosphere (example 2). The default is the midlatitude atmosphere (example 1). The input grid can be taken from an already existing \texttt{atm.tab} file (example 3). The grid points e.g. with 500\,m vertical spacing will be taken from the file, but not the data! The control file parameters relevant for the climatology tool can be found in Table~\ref{tab:Control1} in the Emitter and Atmosphere/Climatology sections.
+
+The Remedios climatology \texttt{clim\_remedios.tab} is in the \texttt{clim} folder. Either copy the climatology into the working directory or set a link.
+
+\emph{Examples}\\
+\begin{minted}[bgcolor=peach,formatcom=\color{black}]{bash}
+0 ../src/climatology [control file] [input grid] [output] [optional]
+1 ../src/climatology clear-air.ctl - atm.tab
+2 ../src/climatology clear-air.ctl - atm.tab CLIMZONE pwin
+3 ../src/climatology clear-air.ctl atm2.tab atm.tab
+\end{minted}
+
+\section{collect}
+
+\section{formod}
+
+\section{interpolate}
+
+\section{kernel}
+
+\section{limb}
+
+\section{planck}
+
+\section{raytrace}
+
+\section{retrieval}
+
+\section{tab2bin}

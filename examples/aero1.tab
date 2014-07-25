@@ -1,0 +1,15 @@
+# $1 = aerosol layer top altitude [km]
+# $2 = aerosol layer bottom altitude [km]
+# $3 = transition layer thickness [km]
+# $4 = source for optical properties
+# $5 = refractive index file
+# $6 = particle concentration of log-normal mode [cm-3]
+# $7 = median radius of log-normal mode [mum]
+# $8 = width of log-normal mode
+
+14.0  13.0  0.01  MIE  ../refrac/ice-266K-warren.dat     0.032  3.6    1.6
+14.0  13.0  0.01  MIE  ../refrac/h2so4-215K-shettle.dat  340.0  0.065  1.75
+14.0  13.0  0.01  MIE  ../refrac/h2so4-215K-shettle.dat  5.0    0.49   1.3
+12.0  10.0  0.01  MIE  ../refrac/h2so4-215K-shettle.dat  340.0  0.065  1.759
+12.0  10.0  0.01  mie  ../refrac/h2so4-215K-shettle.dat  5.0    0.49   1.3
+9.0    8.0  0.01  MIE  ../refrac/ice-266K-warren.dat     0.032  3.6    1.6

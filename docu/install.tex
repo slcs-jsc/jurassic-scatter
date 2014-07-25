@@ -1,0 +1,111 @@
+\section{Quick Start}
+
+get code from repository
+
+(this will create directory jurassic with the subdirectories: docu, examples-tab, lib, jurassic-1.0)
+
+run install script (check environment variables, lib\/build.sh, make) (maybe one that works for JUROPA, JUQUEEN and normal workstations)
+
+go to examples and run clear.sh
+
+If this works you can try the other examples or start your own projects. 
+
+If any error occours, please refer to the more detailed documentation.
+
+\section{download the code}
+jurassic repository
+
+optional/additional file repository (tables and filter functions, refractive index files, external optical properties databases, Remedios atmospheres and PSC study???)
+
+\section{Installation}
+\begin{itemize}
+\item which libraries are needed? GSL and NCDF
+\item how to compile and link the code?
+\end{itemize}
+
+\section{Code Execution}
+\begin{itemize}
+\item how to run the code?
+\item which input is required? (link to description section)
+\item examples for forward simulations: clear air, aerosol scattering, retrieval
+\end{itemize}
+
+\subsection{Forward Simulations}
+\begin{itemize}
+\item \*.ctl: control file with global control flags
+\item atm.tab: atmospheric profiles/mixing ratios
+\item obs.tab: observations and geometry
+\item rad.tab: forward simulation results output file name
+\item tables
+\item \emph{aero.tab}: aerosol and cloud parameters
+\item \emph{complex refractive indices}
+\item or \emph{optical properties database}
+\end{itemize}
+
+\begin{itemize}
+\item maybe one example for clear air nadir
+\item another example for cloudy limb
+\end{itemize}
+
+\subsubsection{Clear Air Simulation}
+\begin{minted}
+[
+frame=lines,
+bgcolor=peach,
+formatcom=\color{black},
+linenos
+]
+{bash}
+
+# path
+pirat=../pirat-1.0
+
+info "Create geometry..."
+$pirat/limb test.ctl 800 5 15 1 obs.tab || exit
+
+info "Call forward model..."
+$pirat/formod test-aerosol.ctl obs.tab atm.tab rad.tab || exit
+\end{minted}
+
+\subsubsection{Aerosol/Cloud Simulation}
+\begin{minted}
+[frame=lines,
+bgcolor=peach,
+formatcom=\color{black},
+linenos]{bash}
+#$pirat/formod aerosol1.ctl obs.tab atm.tab rad.tab || exit
+#$pirat/formod aerosol1.ctl obs.tab atm.tab rad.tab DIRLIST dirlist-aero.asc|| exit
+$pirat/formod aerosol1.ctl obs.tab atm.tab rad.tab AEROFILE aero.tab|| exit
+#$pirat/formod aerosol1.ctl obs.tab atm.tab rad.tab DIRLIST dirlist-aero.asc AEROFILE aero.tab|| exit
+#$pirat/formod test.ctl obs.tab atm.tab rad.tab TASK c || exit
+
+\end{minted} 
+%$
+Instead of giving the filename of the aerosol data here it can also ge given in the control-file:
+
+\texttt{AEROFILE = aero.tab}
+
+The same holds for \texttt{DIRLIST} and \texttt{TASK}.
+
+% \begin{minted}[bgcolor=black,formatcom=\color{white}]{bash}
+% # path
+% pirat=../pirat-1.0
+
+% info "Create geometry..."
+% $pirat/limb test.ctl 800 5 15 1 obs.tab || exit
+
+% info "Call forward model..."
+% $pirat/formod test-aerosol.ctl obs.tab atm.tab rad.tab || exit
+% \end{minted}
+
+\subsection{Retrieval}
+\begin{itemize}
+\item \*.ctl: control file with global control flags
+\item atm.tab: atmospheric profiles/mixing ratios
+\item obs.tab: observations and geometry
+\item rad.tab: forward simulation results output file name ???
+\item tables
+\item measurement data converted to obs.tab
+\item maybe one example for clear air nadir
+\item another example for clear air limb
+\end{itemize}
