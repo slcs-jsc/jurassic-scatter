@@ -1,0 +1,164 @@
+\subsection{Modules}
+
+\subsubsection{brightness}
+The \texttt{brightness} programme calculates the brightness temperature in K for a given radiance in W/(m$^2$ sr cm$^{-1}$) and wave number in cm$^{-1}$.
+
+\emph{Example}\linebreak
+\begin{minted}[frame=lines,bgcolor=peach,formatcom=\color{black},linenos]{bash}
+../src/brightness [radiance] [wavenumber]
+../src/climatology 0.0231451 960
+\end{minted}
+
+\subsubsection{climatology}
+\label{sec:ModuleClimatology}
+The \texttt{climatology} programme can be used to generate the atmosphere file (\texttt{atm.tab}). This programme interpolates the chosen climatology from \citet{Remedios2007} onto the defined altitude grid and adds the trace gases in the same order as given in the control file. One can choose between polar winter (pwin), polar summer (psum), midlatitude (midl) and equatorial (equ) atmosphere (example line 3). The default is the midlatitude atmosphere (example line 2). The input grid can be taken from an already existing \texttt{atm.tab} file (example line 4). The grid points e.g. with 500\,m vertical spacing will be taken from the file, but not the data! The control file parameters relevant for the climatology module can be found in Table~\ref{tab:Control1} in the Emitter and Atmosphere/Climatology sections.
+
+The Remedios climatology \texttt{clim\_remedios.tab} is in the \texttt{clim} folder. Either copy the climatology into the working directory or set a link.
+
+\emph{Examples}\linebreak
+\begin{minted}[frame=lines,bgcolor=peach,formatcom=\color{black},linenos]{bash}
+../src/climatology [control file] [input grid] [output] [optional]
+../src/climatology clear-air.ctl - atm.tab
+../src/climatology clear-air.ctl - atm.tab CLIMZONE pwin
+../src/climatology clear-air.ctl atm2.tab atm.tab
+\end{minted}
+
+\subsubsection{collect}
+\todo
+
+\subsubsection{formod}
+The \texttt{formod} module is the programme that starts a forward simulation. The minimum required input are the control file (Section~\ref{sec:ControlFile}), the observation file (Section~\ref{sec:ObservationFile}), the atmosphere file (Section~\ref{sec:AtmosphereFile}) and the output file (Section~\ref{sec:Output}).
+
+Optional are TASK, DIRLIST (Section~\ref{sec:DirlistFile}) and AEROFILE (Section~\ref{sec:AerosolFile}).
+The option TASK c calculates the contribution of each specified trace gas separately. How are the results stored? \todo
+ 
+The option DIRLIST provides a file with directories. Each directory must contain a control file, observation file, atmosphere file and optionally an aerosol file with the same name, but different content. The DIRLIST is a feature that is used to distribute large simulation/retrieval sets among multiple cores, e.g. on a supercomputer.
+
+\begin{sloppypar}
+The option AEROFILE is required for scattering simulations. The AEROFILE contains the aerosol/cloud altitude information and the corresponding microphysical cloud/ aerosol properties.
+\end{sloppypar}
+
+\emph{Examples}\linebreak
+\begin{minted} [frame=lines, bgcolor=peach, formatcom=\color{black}, linenos]{bash}
+../src/formod [control file] [observation file] [atmosphere file] \
+              [output]
+../src/formod clear-air.ctl obs.tab atm.tab rad.tab 
+../src/formod clear-air.ctl obs.tab atm.tab rad.tab TASK c 
+../src/formod clear-air.ctl obs.tab atm.tab rad.tab \
+              DIRLIST dirlist-orbit.asc
+../src/formod aerosol1.ctl obs.tab atm.tab rad.tab AEROFILE aero.tab
+../src/formod aerosol1.ctl obs.tab atm.tab rad.tab \
+              DIRLIST dirlist-aero.asc AEROFILE aero.tab
+\end{minted} 
+
+Instead of giving TASK, DIRLIST and AEROFILE as input, it can also be specified in the control file:\linebreak
+\texttt{AEROFILE = aero.tab}\linebreak
+\texttt{DIRLIST = dirlist-clim.asc}\linebreak
+\texttt{TASK = c}
+
+\subsubsection{interpolate}
+\todo
+
+\subsubsection{kernel}
+\todo
+
+\subsubsection{limb}
+\label{sec:limb}
+The \texttt{limb} programme creates an observation file (Section~\ref{sec:ObservationFile}) for a specified limb geometry. In the example line 1 an observation file with 11 view point altitudes between 5 and 15\,km is created.
+
+\emph{Example}\linebreak
+\begin{minted} [frame=lines, bgcolor=peach, formatcom=\color{black}, linenos]{bash}
+../src/limb [control file] [observer altitude] \
+            [min view point altitude] [max view point altitude max] \
+            [delta altitude] [output]
+../src/limb aerosol1.ctl 800 5 15 1 obs.tab
+\end{minted} 
+
+\subsubsection{nadir}
+\label{sec:nadir}
+The \texttt{nadir} programme creates an observation file (Section~\ref{sec:ObservationFile}) for the nadir geometry. In the example line 1 an observation file with nadir trace consisting of 11 points from 0 to 10\,N is created.
+
+\emph{Example}\linebreak
+\begin{minted} [frame=lines, bgcolor=peach, formatcom=\color{black}, linenos]{bash}
+../src/nadir [control file] [observer altitude] [min latitude] \
+             [max latitude] [delta latitude] [output]
+../src/nadir aerosol1.ctl 800 0 10 1 obs_nadir.tab
+\end{minted} 
+
+\subsubsection{planck}
+The \texttt{planck} programme returns the Planck radiance in W/(m$^2$ sr cm${^-1}$) for a given temperature in K and wavenumber in cm$^{-1}$.
+
+\emph{Example}\linebreak
+\begin{minted} [frame=lines, bgcolor=peach, formatcom=\color{black}, linenos]{bash}
+../src/planck [temperature] [wavenumber]
+../src/planck 270 960
+\end{minted} 
+
+\subsubsection{raytrace}
+The \texttt{raytrace} programme can be used to perform the raytracing for a given geometry in a given atmosphere and to dump out the line of sight points and certain diagnostics into the files \texttt{raytrace.tab} and \texttt{los.0}. Further input options are: LOSBASE, MASSBASE and AEROFILE.
+
+AEROFILE in example line 4 includes an aerosol file, so that the fine sampling around the aerosol/cloud edges is included into the raytracing. (see Section~\ref{sec:lineofsight}
+
+LOSBASE creates the output file \texttt{los.0} if no other name is specified. It is switched on by default. In example line 6 the output file \texttt{liofsi.0} is created. Example line 7 shows how to switch it off.
+
+\begin{sloppypar}
+MASSBASE in example line 8 creates the output files \texttt{mass.numdens.0} and \texttt{mass.coldens.0}. \todo what is in these files?
+\end{sloppypar}
+
+\emph{Examples}\linebreak
+\begin{minted} [frame=lines, bgcolor=peach, formatcom=\color{black}, linenos]{bash}
+../src/raytrace [control file] [observer file] [atmosphere file] \
+                [options]
+../src/raytrace clear-air.ctl obs_raytrace.tab atm.tab
+../src/raytrace clear-air.ctl obs_raytrace.tab atm.tab \
+                AEROFILE aero1.tab
+../src/raytrace clear-air.ctl obs_raytrace.tab atm.tab LOSBASE liofsi
+../src/raytrace clear-air.ctl obs_raytrace.tab atm.tab LOSBASE -
+../src/raytrace clear-air.ctl obs_raytrace.tab atm.tab MASSBASE mass
+\end{minted} 
+
+\subsubsection{retrieval}
+\todo
+
+\subsubsection{tab2bin}
+The \texttt{tab2bin} programme can be used to convert the ASCII tables to binary format. Using binary format tables significantly reduces the file I/O time during e.g. \texttt{formod} runs. This programme should be run on the architecture where the JURASSIC programmes using these tables will be executed. Please note, tables converted on JUROPA cannot be used on JUQUEEN and vice versa.
+
+\emph{Example}\linebreak
+\begin{minted} [frame=lines, bgcolor=peach, formatcom=\color{black}, linenos]{bash}
+../src/tab2bin [control file]
+../src/tab2bin clear_air.ctl
+\end{minted} 
+ 
+%##################################################################################
+
+\subsection{Libraries}
+\subsubsection{atmosphere.h/c}
+contains routines that deal with atmospheric data, atmospheric composition
+
+\subsubsection{continua.h/c}
+contains routines to calculate CO$_2$, H$_2$O, N$_2$ and O$_2$ continua
+
+\subsubsection{control.h/c}
+contains routines to read and scan the control file
+
+\subsubsection{forwardmodel.h/c}
+contains functions relevant to the forward model, radiative transfer calculation, table interpolation,...
+
+\subsubsection{jurassic.h}
+contains macros, constants (Appendix~\ref{app:constants}), dimensions (Appendix~\ref{app:dimensions}), and global struct definitions
+
+\subsubsection{lineofsight.h/c}
+\label{sec:lineofsight}
+contains functions that deal with raytracing and the line of sight
+Aerosol and cloud sampling: Done in raytracing. Extra los points about 5\,m above and below cloud edges.
+
+\subsubsection{retrievalmodel.h/c}
+contains functions that deal with the retrieval
+
+\subsubsection{scatter.h/c}
+contains routines concerning scattering on aerosol and clouds; mie scattering is following \citet{Bohren1983} code; Gauss-Hermite scheme used for integration over log-normal size distribution; scattering of solar radiation included
+
+\subsubsection{sonstige.h/c}
+contains routines that are used by several other programmes and routines
+
+\subsection{Makefile}

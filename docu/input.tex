@@ -1,4 +1,5 @@
-\section{Aerosol File}
+\subsection{Aerosol File}
+\label{sec:AerosolFile}
 The aerosol file (\texttt{aero.tab}) contains a single 1D cloud scenario with the parameters given in Table~\ref{tab:AeroHead}. An aerosol scenario can be composed of multiple aerosol models. Each aerosol model contains data for a single scattering model in a single layer. The aerosol data must be given sorted starting with the highest layer and ending with the lowest layer. Please make sure that the layers, including their transition layers, do not overlap. Multiple cloud models can be superposed within one layer (e.g. multi-modal lognormal size distribution, different refractive indices, different scattering models). For this, please make sure that top and bottom altitudes are exactly the same. An example is given below.
 
 \begin{table*}[!h]
@@ -27,12 +28,12 @@ formatcom=\color{black},
 linenos
 ]
 {bash}
-14.0  13.0  0.01  MIE  $J/refrac/ice-266K-warren.dat     0.032  3.6    1.6
-14.0  13.0  0.01  MIE  $J/refrac/h2so4-215K-shettle.dat  340.0  0.065  1.7
-14.0  13.0  0.01  MIE  $J/refrac/h2so4-215K-shettle.dat  5.0    0.49   1.3
-12.0  10.0  0.01  MIE  $J/refrac/h2so4-215K-shettle.dat  340.0  0.065  1.7
-12.0  10.0  0.01  MIE  $J/refrac/h2so4-215K-shettle.dat  5.0    0.49   1.3
-9.0    8.0  0.01  MIE  $J/refrac/ice-266K-warren.dat     0.032  3.6    1.6
+14.0  13.0  0.01  MIE  ../refrac/ice-266K-warren.dat     0.032  3.6    1.6
+14.0  13.0  0.01  MIE  ../refrac/h2so4-215K-shettle.dat  340.0  0.065  1.7
+14.0  13.0  0.01  MIE  ../refrac/h2so4-215K-shettle.dat  5.0    0.49   1.3
+12.0  10.0  0.01  MIE  ../refrac/h2so4-215K-shettle.dat  340.0  0.065  1.7
+12.0  10.0  0.01  MIE  ../refrac/h2so4-215K-shettle.dat  5.0    0.49   1.3
+9.0    8.0  0.01  MIE  ../refrac/ice-266K-warren.dat     0.032  3.6    1.6
 \end{minted}
 \normalsize
 \emph{Don't:}\\
@@ -45,9 +46,9 @@ formatcom=\color{black},
 linenos
 ]
 {bash}
-14.0  13.0  0.01  MIE  $J/refrac/ice-266K-warren.dat     0.032  3.6    1.6
-14.0  13.0  0.01  MIE  $J/refrac/h2so4-215K-shettle.dat  340.0  0.065  1.75
-14.0  12.0  0.01  MIE  $J/refrac/h2so4-215K-shettle.dat  5.0    0.49   1.3
+14.0  13.0  0.01  MIE  ../refrac/ice-266K-warren.dat     0.032  3.6    1.6
+14.0  13.0  0.01  MIE  ../refrac/h2so4-215K-shettle.dat  340.0  0.065  1.75
+14.0  12.0  0.01  MIE  ../refrac/h2so4-215K-shettle.dat  5.0    0.49   1.3
 \end{minted} 
 %$
 }
@@ -59,8 +60,6 @@ linenos
 \begin{itemize}
 \item Mie: internal Mie code with Gauss-Hermite integration
 \item Ext: external database, e.g. for non-spherical particles \emph{not implemented yet}
-\item MieBin: internal Mie code with integration over binned data \emph{not implemented yet}
-\item ???: we keep this extendable
 \end{itemize}
 
 \emph{Column~5} contains the path and name of an external file. For the Mie code complex refractive indices are required. The refractive index file is described in \ref{sec:Refrac}. For an external database of optical properties the file name must be given here. The optical properties database format is described in \ref{sec:OptData}.
@@ -69,13 +68,16 @@ linenos
 
 The aerosol/cloud and scattering related control file parameters are listed in Table~\ref{tab:Control1}.
 
-\todo example for external data base\\
-%hier mit minted beispiel-files reinladen
+Sabines hint:\\
+Generally transition layers are a nasty idea. They make physical interpretations much more difficult, e.g see \citet{Griessbach2013} and \citet{Hoepfner2009} scenarios 4 and 5 for the effects of transition layer sampling. I strongly recommend to avoid large transition layers as long as possible.
+
+Anyway, real clouds usually have sharp cloud edges (e.g. lifting condensation level).
 
 %#########################################################
 
-\section{Atmosphere File}
-The atmosphere file (\texttt{atm.tab}) is a XX+1 column list containing the temperature, pressure and volume mixing ratio profiles on a certain altitude grid. The number of total columns increases with the number of trace gases. The column order of the trace gases must be the same as the trace gas name order given in the control file (\ref{sec:ControlFile}). The tool \texttt{climatology} (\ref{sec:ToolClimatology}) can be used to generate some default atmosphere files with an arbitrary altitude grid. The atmosphere related control file parameters are optional and listed in Table~\ref{tab:Control1}.
+\subsection{Atmosphere File}
+\label{sec:AtmosphereFile}
+The atmosphere file (\texttt{atm.tab}) is a XX+1 column list containing the temperature, pressure and volume mixing ratio profiles on a certain altitude grid. The number of total columns increases with the number of trace gases. The column order of the trace gases must be the same as the trace gas name order given in the control file (\ref{sec:ControlFile}). The programme \texttt{climatology} (\ref{sec:ModuleClimatology}) can be used to generate some default atmosphere files with an arbitrary altitude grid. The atmosphere related control file parameters are listed in Table~\ref{tab:Control1}.
 
 The atmosphere file is the setup information for forward simulations. For retrievals it is the a priori information. Retrieval results are written in the same format (atmosphere structure) into a new file (e.g \texttt{atm\_res.tab}). The retrieval output file names are hard-coded.
 
@@ -98,12 +100,13 @@ The atmosphere file is the setup information for forward simulations. For retrie
 
 %#########################################################
 
-\section{Control File}
+\subsection{Control File}
 \label{sec:ControlFile}
-The control file (e.g. \texttt{clear.ctl}) contains all general setup parameters for simulation and retrieval runs. All mandatory and optional parameters are listed in Tables~\ref{tab:Control1} and \ref{tab:Control2}. Examples for clear air and aerosol simulation setups are given in Section~\ref{sec:ControlExamples}.
+The control file (e.g. \texttt{clear.ctl}) contains all general setup parameters for simulation and retrieval runs. All mandatory and optional parameters are listed in Tables~\ref{tab:Control1} and \ref{tab:Control2}. Examples for clear air and aerosol simulation setups can be found in the \texttt{examples} folder.
 
-\begin{table*}[!h]
+\begin{table*}[!p]
 \caption{Control flags}
+\scalebox{0.9}{
 \begin{tabular}{|l|l|l|l|}
 \hline
 \cellcolor[RGB]{188,188,188}{flag name} & \cellcolor[RGB]{188,188,188}{purpose} & 
@@ -159,7 +162,7 @@ CTM\_O2      & O2-continuum                  & 1     & 0: off; 1: on \\
 
 \multicolumn{4}{|l|}{\cellcolor[RGB]{255,204,230}{Aerosol and Clouds}} \\
 \hline
-SCA\_N       & number of scattering models   & 0     & 0\,--\,XX \\
+SCA\_N       & number of scattering models   & 0     & 0\,--\,15 \\
              &                               &       & 0: clear air (no ext- \\
              &                               &       & inction, no scattering) \\
 SCA\_MULT    & multiple scattering - number  & 1     & 0: extinction only\\
@@ -176,12 +179,13 @@ ZMIN           & atmosphere bottom altitude  & 0  & in km \\
 ZMAX           & atmosphere top altitude     & 0  & in km \\
 DZ             & atmosphere vertical grid     & 1  & in km \\
 \hline
-\end{tabular}
+\end{tabular}}
 \label{tab:Control1}
 \end{table*} 
 
-\begin{table*}
+\begin{table*}[!p]
 \caption{Control flags}
+\scalebox{0.9}{
 \begin{tabular}{|l|l|l|l|}
 \hline
 \cellcolor[RGB]{188,188,188}{flag name} & \cellcolor[RGB]{188,188,188}{purpose} & 
@@ -244,40 +248,25 @@ WRITE\_BBT     & use brightness temperature   & 0  & 0: no; 1: yes  \\
                & instead of radiance          &    & \\   
 WRITE\_MATRIX  & write matrix data            & 0  & 0: no; 1: yes  \\
 \hline
-\end{tabular}
+\end{tabular}}
 \label{tab:Control2}
 \end{table*}
 
-% \begin{table*}[!h]
-% \caption{Control flags}
-% \begin{tabular}{|l|l|l|l|}
-% \hline
-% \cellcolor[RGB]{188,188,188}{flag name} & \cellcolor[RGB]{188,188,188}{purpose} & 
-% \cellcolor[RGB]{188,188,188}{default} & \cellcolor[RGB]{188,188,188}{options} \\
-% \hline
-% \hline
+\subsubsection{Aerosol and Clouds}
+To include scattering on aerosol and cloud particles into the simulations up to 15 scattering models can be used. One scattering model can be a single mode of a multi-modal size distribution. To simulate a three modal size distribution three scattering models must be used (and placed at the same altitude in the aerosol input file). For each model individual refractive indices may be used. It is also possible to combine Mie-scattering and external databases in the same aerosol/cloud layer. For a clear air simulation the number of scattering model must be set to 0.
 
-% \multicolumn{4}{|l|}{\cellcolor[RGB]{255,204,230}{Atmosphere/Climatology}} \\
-% \hline
-% ZMIN           & atmosphere bottom altitude  & 0  & in km \\ 
-% ZMAX           & atmosphere top altitude     & 0  & in km \\
-% DZ             & atmosphere vertical grid     & 1  & in km \\
-% \hline
-% \end{tabular}
-% \label{tab:Control3}
-% \end{table*}
+It is also possible to define an aerosol/cloud scenario and to neglect the scattering by setting the multiple scattering flag to 0. In this case you can choose if you want to use either the absorption or the extinction coefficient of the aerosol/cloud layers. (See \citet{Hoepfner2005} to learn which is best for a particular scenario.)
 
-\subsection{Aerosol and Clouds}
-See Section \ref{sec:Aerosol} for detailed description.
+For a single scattering simulation the multiple scattering flag must be set to 1. If it is set to 2 or larger multiple scattering is simulated by also scattering the incoming rays that are calculated for the scattering source term.
 
-\subsection{Continua}
+\subsubsection{Continua}
 \todo kurze Beschreibung, welches Schema?
 %Continua are also already considered in the look-up tables. The scheme depends on the line-by-line model used to generate the look-up tables.
 
-\subsection{Emissivity look-up Tables}
+\subsubsection{Emissivity look-up Tables}
 Basename for table files and filter function files. Look-up tables are created in instrument specific spectral resolution/sampling. The look-up tables are described in \ref{sec:Tables}.
 
-\subsection{Emitter}
+\subsubsection{Emitter}
 \label{sec:Emitter}
 A list of supported trace gases is given in Table~\ref{tab:Emitter}. The reading routine is not case sensitive.
 
@@ -321,27 +310,27 @@ SO2  & SO$_2$      & sulfur dioxide  \\
 \label{tab:Emitter}
 \end{table*} 
 
-\subsection{Field of View}
+\subsubsection{Field of View}
 \todo
 
-\subsection{Ray-tracing}
-The lengths of the line-of-sight segments to be integrated is either determined by RAYDS (total segment length) or RAYDZ (z-component of segment length). For limb scenarios RAYDS is most likely the limiting value and in nadir scenarios RAYDZ will be the limiting value. For limb-scenarios RAYDS\,=\,10\,km is reasonable. In nadir and sub-limb-scenarios a segment length of 10\,km is too much to sample steep atmospheric gradients (temperature, trace gases). Especially for scattering simulations, where limb, sub-limb and nadir pathes are calculated a reasonable combination of RAYDS and RAYDZ is required for fast and accurate simulations. From our experience RAYDS\,=\,10\,km and RAYDZ\,=\,0.1\,--\,1\,km offer a good trade off for accuracy and efficiency. 
+\subsubsection{Ray-tracing}
+The lengths of the line-of-sight segments to be integrated is either determined by RAYDS (total segment length) or RAYDZ (z-component of segment length). For limb scenarios RAYDS is most likely the limiting value and in nadir scenarios RAYDZ will be the limiting value. For limb-scenarios RAYDS\,=\,10\,km is reasonable. In nadir and sub-limb-scenarios a segment length of 10\,km is too much to sample steep atmospheric gradients (temperature, trace gases). Especially for scattering simulations, where limb, sub-limb and nadir paths are calculated a reasonable combination of RAYDS and RAYDZ is required for fast and accurate simulations. From our experience RAYDS\,=\,10\,km and RAYDZ\,=\,0.1\,--\,1\,km offer a good trade off for accuracy and efficiency. 
 
-For cloud and aerosol simulations with a transition layer larger than 20\,m the parameter TRANSS refines the sampling grid within the transition layer. The default value is TRANS\,=\,20\,m. (Please see further comments on transition layers in Section~\ref{sec:Aerosol}.)
+For cloud and aerosol simulations with a transition layer larger than 20\,m the parameter TRANSS refines the sampling grid within the transition layer. The default value is TRANS\,=\,20\,m. (Please see further comments on raytracing and transition layers in Section~\ref{sec:lineofsight}.)
 
-\subsection{Spectral Windows}
+\subsubsection{Spectral Windows}
 Each channel can be assigned to a window e.g. to have a constant extinction for all channels.
 
-\subsection{Examples}
-\label{sec:ControlExamples}
-\todo include clear air and aerosol example with minted
+%##########################################################
+\subsection{Directory List}
+\label{sec:DirlistFile}
+\todo
 
 %##########################################################
 
-\section{Observation File}
-The observation file (\texttt{obs.tab}) is a multi-column list containing the geometry information (time, observer, view point and tangent point position) and the (measured) radiances (and/or transmittances) for each channel. (View point and tangent point differ, because of atmospheric refraction.) The number of columns increases with the number of channels. For retrievals this file contains the measurements. For forward simulations this file defines the viewing geometry. Columns 1 to 7 are mandatory. (Kann mann hier statt 5-7 auch 8-10 angeben? Ist für diese conversion im Code was vorgesehen?) The forward simulation output is written in the same format (observation structure) into a new file specified when calling the forward model (e.g. \texttt{rad.tab}).
-
-Wie generiert man eine Beobachtungsgeometrie????
+\subsection{Observation File}
+\label{sec:ObservationFile}
+The observation file (\texttt{obs.tab}) is a multi-column list containing the geometry information (time, observer, view point and tangent point position) and the (measured) radiances (and/or transmittances) for each channel. (View point and tangent point differ, because of atmospheric refraction.) The number of columns increases with the number of channels. For retrievals this file contains the measurements. For forward simulations this file defines the viewing geometry. Columns 1 to 7 are mandatory. The forward simulation output is written in the same format (observation structure) into a new file specified when calling the forward model (e.g. \texttt{rad.tab}). The JURASSIC modules \texttt{limb} and \texttt{nadir} (Section~\ref{sec:limb} and \ref{sec:nadir}) can be used to create an observation geometry.
 
 \begin{table*}[!h]
 \caption{Columns of \texttt{obs.tab} file}
@@ -362,19 +351,18 @@ Wie generiert man eine Beobachtungsgeometrie????
 \# \$XX+1 & = & channel XX: transmittance \\
 \end{tabular}
 \end{table*} 
-%hier mit minted beispiel-file reinladen
 
 %##########################################################
 
-\section{Optical Properties Database}
+\subsection{Optical Properties Database}
 \label{sec:OptData}
 \todo Not implemented yet.
 
 %##########################################################
 
-\section{Refractive Index File}
+\subsection{Refractive Index File}
 \label{sec:Refrac}
-The refractive index file contains the wavenumber dependent complex refractive indices in the format given in Table~\ref{tab:Refrac}. A formatted colletion can be found in the folder \texttt{refrac}. One file contains the data set for one temperature (given in the file name). All refractive indices are taken from the HITRAN database \citep{Rothman2009} aerosol compilation. References to the origional sources are given there.
+The refractive index file contains the wavenumber dependent complex refractive indices in the format given in Table~\ref{tab:Refrac}. A formatted collection can be found in the folder \texttt{refrac}. One file contains the data set for one temperature (given in the file name). All refractive indices are taken from the HITRAN database \citep{Rothman2009} aerosol compilation. References to the original sources are given there.
 %I think the temperature dependence is not the leading effect/uncertainty (status 12 June 2014)
 
 \begin{table*}[!h]
@@ -389,7 +377,7 @@ The refractive index file contains the wavenumber dependent complex refractive i
 
 %##########################################################
 
-\section{Tables}
+\subsection{Tables}
 \label{sec:Tables}
 \todo Describe me!!!
 

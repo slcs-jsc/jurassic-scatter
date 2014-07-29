@@ -1,1 +1,21 @@
-output
+rad.tab, same structure as observation file
+
+\begin{table*}[!h]
+\caption{Columns of \texttt{rad.tab} file}
+\begin{tabular}{lcl}
+\# \$1 & = & time [seconds since 2000-01-01T00:00Z] \\
+\# \$2 & = & observer altitude [km] \\
+\# \$3 & = & observer longitude [deg] \\
+\# \$4 & = & observer latitude [deg] \\
+\# \$5 & = & view point altitude [km] \\
+\# \$6 & = & view point longitude [deg] \\
+\# \$7 & = & view point latitude [deg] \\
+\# \$8 & = & tangent point altitude [km] \\
+\# \$9 & = & tangent point longitude [deg] \\
+\# \$10 & = & tangent point latitude [deg] \\
+\# \$11 & = & channel 792: radiance [W/(m$^2$ sr cm$^{-1}$)] \\
+\# \$12 & = & channel 792: transmittance \\
+\# \$XX & = & channel XX: radiance [W/(m$^2$ sr cm$^{-1}$] \\
+\# \$XX+1 & = & channel XX: transmittance \\
+\end{tabular}
+\end{table*} 

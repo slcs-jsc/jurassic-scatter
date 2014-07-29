@@ -1,4 +1,5 @@
-\documentclass[12pt,a4paper,titlepage,openright,twoside]{book}
+%\documentclass[12pt,a4paper,titlepage,openright,twoside]{book}
+\documentclass[12pt,a4paper,titlepage,twoside]{article}
 %\documentclass[12pt,a4paper,titlepage,draft]{book}
 %\documentclass[12pt,a4paper,titlepage,draft]{article}
 \usepackage{amsmath, amssymb, dcolumn, amsxtra, alltt}
@@ -19,7 +20,7 @@
 
 \usepackage[british,ngerman]{babel}
 \usepackage[round,authoryear]{natbib}
-\usepackage[bf]{caption2}
+\usepackage[bf]{caption}
 
 \usepackage{color}
 \usepackage[table]{xcolor}
@@ -48,51 +49,48 @@
 \begin{document}
 \selectlanguage{british}
 
-\frontmatter
+%\frontmatter
 \author{SimLab Climate, JSC, FZJ, J\"u{}lich, Germany \footnote{Contact: l.hoffmann@fz-juelich.de, s.griessbach@fz-juelich.de}}
 \title{JURASSIC - High-Q}
-%\subtitle{-- Monograph --}
+
 \maketitle
-
 \tableofcontents
+\clearpage
 
-\mainmatter
-
-\chapter{Introduction}
+\section{Introduction}
 \input{intro.tex}
+\clearpage
 
-\chapter{Getting Started}
+\section{Getting Started}
 \input{install.tex}
+\clearpage
 
-\chapter{Input Files}
-\label{chap:input}
+\section{Input Files}
+\label{sec:Input}
 \input{input.tex}
+\clearpage
 
-\chapter{Output Files}
-\label{chap:output}
+\section{Output Files}
+\label{sec:Output}
 \input{output.tex}
+\clearpage
 
-\chapter{Tools}
-\label{chap:tools}
-\input{tools.tex}
-
-\chapter{Documentation}
-\label{chap:docu}
-\input{docu.tex}
+\section{JURASSIC Modules and Libraries}
+\label{sec:Modules}
+\input{modules.tex}
+\clearpage
 
 \begin{appendix}
-\chapter{Lists of Constants and Dimensions}
+\section{Lists of Constants and Dimensions}
 %\label{chap:Appendix}
 \input{constants.tex}
 \end{appendix}
 
-
-\addcontentsline{toc}{chapter}{Bibliography}
-
-\backmatter
+\clearpage
+\addcontentsline{toc}{section}{Bibliography}
+%\backmatter
 \bibliography{/home/zam/sgrie/1/Literatur/Literatur.bib}
 \bibliographystyle{plainnat}
-%\bibliographystyle{copernicus}
 
 %\input{acknowledgement.tex}
 

@@ -1,53 +1,81 @@
-\section{Quick Start}
+\subsection{Quick Start}
 
-get code from repository
+The following description is for Linux users. To download the code you have to apply for an account. First, register here:
 
-(this will create directory jurassic with the subdirectories: docu, examples-tab, lib, jurassic-1.0)
+\texttt{https://cst.version.fz-juelich.de/}
 
-run install script (check environment variables, lib\/build.sh, make) (maybe one that works for JUROPA, JUQUEEN and normal workstations)
+and second, send us an e-mail with your username. We will activate your account.\\
+\texttt{s.griessbach@fz-juelich.de} or\\
+\texttt{l.hoffmann@fz-juelich.de}
 
-go to examples and run clear.sh
 
-If this works you can try the other examples or start your own projects. 
+You can either download the code as a .zip (.tar) file or use git clone. For the git clone move to the directory where you want to put the code and type:
 
-If any error occours, please refer to the more detailed documentation.
+\begin{minted}
+[frame=lines,
+bgcolor=peach,
+formatcom=\color{black},
+linenos]{bash}
+git clone git@cst.version.fz-juelich.de:climate/jurassic.git
+\end{minted}
 
-\section{download the code}
-jurassic repository
+This will create the directory \texttt{jurassic} with the following subdirectories: \texttt{clim}, \texttt{docu}, \texttt{examples}, \texttt{lib}, \texttt{refrac}, \texttt{src}.
 
-optional/additional file repository (tables and filter functions, refractive index files, external optical properties databases, Remedios atmospheres and PSC study???)
+Go to \texttt{src} and run the Makefile. If it finishes without error, go to \texttt{examples} run \texttt{clear.sh}, \texttt{aero0.sh} and \texttt{aero1.sh}. If this works you're done and you can start your own projects.
 
-\section{Installation}
+\begin{minted}
+[frame=lines,
+bgcolor=peach,
+formatcom=\color{black},
+linenos]{bash}
+cd src
+make
+cd ../examples
+clear.sh
+aerosol0.sh
+aerosol1.sh
+\end{minted}
+ 
+If the makefile does not finish without any error either the paths to the GSL and/or NetCDF libraries are wrong or the libraries are not installed. Install the libraries and/or add the library and include paths to the makefile. If this does not work or if there are any other problems, please contact \texttt{s.griessbach@fz-juelich.de} or \texttt{l.hoffmann@fz-juelich.de}.
+
+\subsection{JURASSIC Repository}
+The JURASSIC repository contains 6 folders:
+\begin{table}[!h]
+\begin{tabular}{l|l}
+folder            & content \\
+\hline
+\texttt{clim}     & climatology data from \citet{Remedios2007}\\
+\texttt{docu}     & this documentation \\
+\texttt{examples} & example setups \\
+\texttt{lib}      & scripts to install the required GSL and NetCDF libraries (if required)\\
+\texttt{refrac}   & selection of refractive indices for scattering simulations \\
+\texttt{src}      & JURASSIC source files \\
+\end{tabular}
+\end{table}
+
+The JURASSIC source code is written in C and we usually compile the code with the GCC. The code only requires the GSL and NetCDF libraries. In case the libraries are not installed and you do not have root access you can install the packages provided in \texttt{lib}.
+
+\subsection{How to do ...?~-~Examples}
+The following examples will show you how to use the JURASSIC modules, to do various forward simulations and retrievals. The detailed documentation of the JURASSIC modules is given in Section~\ref{sec:Modules}. For each example the required input files and output files are listed. The detailed descriptions of input and output files are given in Sections~\ref{sec:Input} and \ref{sec:Output}. The most substantial input file is the control file (Section~\ref{sec:ControlFile}). It contains all flags to setup the runs. We try to demonstrate the usage of all flags in the examples. The examples discussed here you will find in the \texttt{examples} folder as working examples.
+
+\subsubsection{Limb Clear Air Forward Simulation}
+\label{sec:LimbClear}
+Input files:
 \begin{itemize}
-\item which libraries are needed? GSL and NCDF
-\item how to compile and link the code?
+\item clear-air.ctl: control file with global control flags
+\item atm.tab: atmospheric profile created for polar winter atmosphere
+\item obs.tab: observation geometry created for limb observer for 10 tangent altitudes
+\item *.tab: emissivity tables for each trace gas
+\item *.filt: filter functions for each spectral window
 \end{itemize}
 
-\section{Code Execution}
+Output file:
 \begin{itemize}
-\item how to run the code?
-\item which input is required? (link to description section)
-\item examples for forward simulations: clear air, aerosol scattering, retrieval
-\end{itemize}
-
-\subsection{Forward Simulations}
-\begin{itemize}
-\item \*.ctl: control file with global control flags
-\item atm.tab: atmospheric profiles/mixing ratios
-\item obs.tab: observations and geometry
 \item rad.tab: forward simulation results output file name
-\item tables
-\item \emph{aero.tab}: aerosol and cloud parameters
-\item \emph{complex refractive indices}
-\item or \emph{optical properties database}
 \end{itemize}
 
-\begin{itemize}
-\item maybe one example for clear air nadir
-\item another example for cloudy limb
-\end{itemize}
+For this example we use the \texttt{climatology} and the  \texttt{limb} module to create the required atmosphere and observation file, respectively. The forward simulation is started with the \texttt{formod} module.
 
-\subsubsection{Clear Air Simulation}
 \begin{minted}
 [
 frame=lines,
@@ -56,49 +84,114 @@ formatcom=\color{black},
 linenos
 ]
 {bash}
+#! /bin/bash
 
 # path
-pirat=../pirat-1.0
+src=../src
 
-info "Create geometry..."
-$pirat/limb test.ctl 800 5 15 1 obs.tab || exit
+echo "Create atmosphere..."
+$src/climatology clear-air.ctl - atm.tab CLIMZONE pwin|| exit
 
-info "Call forward model..."
-$pirat/formod test-aerosol.ctl obs.tab atm.tab rad.tab || exit
+echo "Create observation geometry..."
+$src/limb clear-air.ctl 800 5 15 1 obs.tab || exit
+
+echo "Call forward model..."
+$src/formod clear-air.ctl obs.tab atm.tab rad_clear.tab || exit
 \end{minted}
+%$
 
-\subsubsection{Aerosol/Cloud Simulation}
+\subsubsection{Nadir Aerosol Forward Simulation}
+Input files:
+\begin{itemize}
+\item aerosol0.ctl: control file with global control flags
+\item atm.tab: atmospheric profile created for polar winter atmosphere
+\item obs\_nadir.tab: observation geometry created for nadir observer
+\item *.tab: emissivity tables for each trace gas
+\item *.filt: filter functions for each spectral window
+\item aero0.tab: aerosol/cloud geometry and microphysical properties
+\item complex refractive index file as given in aero.tab
+\end{itemize}
+
+Output file:
+\begin{itemize}
+\item rad\_aero0.tab: forward simulation results output file name
+\end{itemize}
+
+For this example we use the \texttt{climatology} and the  \texttt{nadir} module to create the required atmosphere and observation file, respectively. The forward simulation is started with the \texttt{formod} module.
+
+
 \begin{minted}
-[frame=lines,
+[
+frame=lines,
 bgcolor=peach,
 formatcom=\color{black},
-linenos]{bash}
-#$pirat/formod aerosol1.ctl obs.tab atm.tab rad.tab || exit
-#$pirat/formod aerosol1.ctl obs.tab atm.tab rad.tab DIRLIST dirlist-aero.asc|| exit
-$pirat/formod aerosol1.ctl obs.tab atm.tab rad.tab AEROFILE aero.tab|| exit
-#$pirat/formod aerosol1.ctl obs.tab atm.tab rad.tab DIRLIST dirlist-aero.asc AEROFILE aero.tab|| exit
-#$pirat/formod test.ctl obs.tab atm.tab rad.tab TASK c || exit
+linenos
+]
+{bash}
+#! /bin/bash
 
-\end{minted} 
+# path
+src=../src
+
+echo "Create atmosphere..."
+$src/climatology aerosol1.ctl - atm.tab CLIMZONE pwin || exit
+
+echo "Create observation geometry..."
+$src/nadir aerosol1.ctl 800 0 10 1 obs_nadir.tab || exit
+
+echo "Call forward model..."
+
+$src/formod aerosol0.ctl obs_nadir.tab atm.tab rad_aero0.tab \
+            AEROFILE aero0.tab|| exit
+\end{minted}
 %$
-Instead of giving the filename of the aerosol data here it can also ge given in the control-file:
 
-\texttt{AEROFILE = aero.tab}
+\subsubsection{Limb Aerosol Forward Simulation}
+Input files:
+\begin{itemize}
+\item aerosol1.ctl: control file with global control flags
+\item atm.tab: atmospheric profile created for polar winter atmosphere
+\item obs.tab: observation geometry created for nadir observer
+\item *.tab: emissivity tables for each trace gas
+\item *.filt: filter functions for each spectral window
+\item aero1.tab: aerosol/cloud geometry and microphysical properties
+\item complex refractive index file as given in aero.tab
+\end{itemize}
 
-The same holds for \texttt{DIRLIST} and \texttt{TASK}.
+Output file:
+\begin{itemize}
+\item rad\_aero1.tab: forward simulation results output file name
+\end{itemize}
 
-% \begin{minted}[bgcolor=black,formatcom=\color{white}]{bash}
-% # path
-% pirat=../pirat-1.0
+For this example we use the \texttt{climatology} and the \texttt{limb} module to create the required atmosphere and observation file, respectively. The forward simulation is started with the \texttt{formod} module.
 
-% info "Create geometry..."
-% $pirat/limb test.ctl 800 5 15 1 obs.tab || exit
+\begin{minted}
+[
+frame=lines,
+bgcolor=peach,
+formatcom=\color{black},
+linenos
+]
+{bash}
+#! /bin/bash
 
-% info "Call forward model..."
-% $pirat/formod test-aerosol.ctl obs.tab atm.tab rad.tab || exit
-% \end{minted}
+# path
+src=../src
 
-\subsection{Retrieval}
+echo "Create atmosphere..."
+$src/climatology aerosol1.ctl - atm.tab CLIMZONE pwin || exit
+
+echo "Create observation geometry..."
+$src/nadir aerosol1.ctl 800 0 10 1 obs.tab || exit
+
+echo "Call forward model..."
+
+$src/formod aerosol1.ctl obs_nadir.tab atm.tab rad_aero1.tab \
+            AEROFILE aero1.tab|| exit
+\end{minted}
+%$
+
+\subsubsection{Limb Clear Air Retrieval}
 \begin{itemize}
 \item \*.ctl: control file with global control flags
 \item atm.tab: atmospheric profiles/mixing ratios
