@@ -1,0 +1,8 @@
+*.[oa]
+*~
+lib/*
+docu/jurassic.aux
+docu/jurassic.blg
+docu/jurassic.log
+docu/jurassic.out
+docu/jurassic.toc
