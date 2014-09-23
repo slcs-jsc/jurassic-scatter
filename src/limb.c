@@ -1,6 +1,6 @@
 #include "jurassic.h"
 #include "control.h"
-#include "sonstige.h"
+#include "misc.h"
 
 /* Create observations grid */
 

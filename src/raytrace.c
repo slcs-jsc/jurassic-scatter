@@ -4,7 +4,7 @@
 
 int main(int argc, char *argv[]) {
   
-  static atm_t atm, atm2;
+  static atm_t atm;
   
   static ctl_t ctl;
   
@@ -18,23 +18,17 @@ int main(int argc, char *argv[]) {
   
   FILE *out;
   
-  char filename[LEN], losbase[LEN], massbase[LEN], aerofile[LEN];
-  
-  double cgu[NLOS][NGMAX], s;
-  
-  int ig, ip, ir, iw;
+  char filename[LEN], aerofile[LEN];
+    
+  int id, ig, ip, ir, iw;
   
   /* Check arguments... */
   if(argc<4)
     ERRMSG("Give parameters: <ctl> <obs> <atm>");
-
+  
   /* Read control parameters... */
   read_ctl(argc, argv, &ctl);
   
-  /* Get basenames... */
-  scan_ctl(argc, argv, "LOSBASE", -1, "los", losbase);
-  scan_ctl(argc, argv, "MASSBASE", -1, "-", massbase);
-
   /* Get aero... */
   scan_ctl(argc, argv, "AEROFILE", -1, "-", aerofile);
   
@@ -49,33 +43,9 @@ int main(int argc, char *argv[]) {
     read_aero(NULL, aerofile, &ctl, &aeroin);
     /* Get aerosol/cloud optical properties */
     get_opt_prop(&ctl, &aeroin, &aero);
-  } 
-  else if (aerofile[0]=='-' && ctl.sca_n>0) {
+  } else if (aerofile[0]=='-' && ctl.sca_n>0) {
     ERRMSG("Please give aerosol file name or set SCA_N=0 for clear air simulation!");
   }
-
-  /* Create output file... */
-  if(!(out=fopen("raytrace.tab", "w")))
-    ERRMSG("Cannot create raytrace.tab!");
-  
-  /* Write header... */
-  fprintf(out,
-	  "# $1 = time (seconds since 2000-01-01T00:00Z)\n"
-	  "# $2 = observer altitude [km]\n"
-	  "# $3 = observer longitude [deg]\n"
-	  "# $4 = observer latitude [deg]\n"
-	  "# $5 = view point altitude [km]\n"
-	  "# $6 = view point longitude [deg]\n"
-	  "# $7 = view point latitude [deg]\n"
-	  "# $8 = tangent point altitude [km]\n"
-	  "# $9 = tangent point longitude [deg]\n"
-	  "# $10 = tangent point latitude [deg]\n"
-	  "# $11 = ray path index\n"
-	  "# $12 = ray path length [km]\n");
-  for(ig=0; ig<ctl.ng; ig++)
-    fprintf(out, "# $%d = %s column density [molec/cm^2]\n",
-	    13+ig, ctl.emitter[ig]);
-  fprintf(out, "\n");
   
   /* Loop over rays... */
   for(ir=0; ir<obs.nr; ir++) {
@@ -83,79 +53,67 @@ int main(int argc, char *argv[]) {
     /* Raytracing... */
     raytrace(&ctl, &atm, &obs, &aero, &los, ir);
     
-    /* Get ray path length... */
-    s=0;
-    for(ip=0; ip<los.np; ip++)
-      s+=los.ds[ip];
+    /* Create file... */
+    sprintf(filename, "los.%d", ir);
+    if(!(out=fopen(filename, "w")))
+      ERRMSG("Cannot create los.tab!");
     
-    /* Get column densities... */
-    for(ig=0; ig<ctl.ng; ig++) {
-      cgu[0][ig]=los.u[0][ig];
-      for(ip=1; ip<los.np; ip++)
-	cgu[ip][ig]=cgu[ip-1][ig]+los.u[ip][ig];
-    }
-    
-    /* Write to file... */
-    fprintf(out, "%.2f %g %g %g %g %g %g %g %g %g %d %g",
-	    obs.time[ir], obs.obsz[ir], obs.obslon[ir], obs.obslat[ir],
-	    obs.vpz[ir], obs.vplon[ir], obs.vplat[ir], obs.tpz[ir],
-	    obs.tplon[ir], obs.tplat[ir], ir, s);
+    /* Write header... */
+    fprintf(out,
+	    "# $1 = time (seconds since 2000-01-01T00:00Z)\n"
+	    "# $2 = LOS point altitude [km]\n"
+	    "# $3 = LOS point longitude [deg]\n"
+	    "# $4 = LOS point latitude [deg]\n"
+	    "# $5 = LOS point pressure [hPa]\n"
+	    "# $6 = LOS point temperature [K]\n");
     for(ig=0; ig<ctl.ng; ig++)
-      fprintf(out, " %g", cgu[los.np-1][ig]);
+      fprintf(out, "# $%d = LOS point %s volume mixing ratio \n",
+	      7+ig, ctl.emitter[ig]);
+    for(iw=0; iw<ctl.nw; iw++)
+      fprintf(out, "# $%d = LOS point window %d extinction [1/km]\n",
+	      7+ctl.ng+iw, iw);
+    for(ig=0; ig<ctl.ng; ig++)
+      fprintf(out, "# $%d = LOS point %s column density [molec/cm^2] \n",
+	      7+ctl.ng+ctl.nw+ig, ctl.emitter[ig]);
+    for(id=0; id<ctl.nd; id++)
+      fprintf(out, "# $%d = LOS point beta_e(%.4f cm-1) [km-1] \n", 7+ctl.ng+ctl.nw+ctl.ng+id, ctl.nu[id]);
+    for(id=0; id<ctl.nd; id++)
+      fprintf(out, "# $%d = LOS point beta_s(%.4f cm-1) [km-1] \n", 7+ctl.ng+ctl.nw+ctl.ng+ctl.nd+id, ctl.nu[id]);
+    for(id=0; id<ctl.nd; id++)
+      fprintf(out, "# $%d = LOS point beta_a(%.4f cm-1) [km-1] \n", 7+ctl.ng+ctl.nw+ctl.ng+2*ctl.nd+id, ctl.nu[id]);
+    fprintf(out, "# $%d = LOS segement length [km] \n", 7+ctl.ng+ctl.nw+ctl.ng+3*ctl.nd);
+    
     fprintf(out, "\n");
     
-    /* Atmospheric data... */
-    if(losbase[0]!='-') {
-      
-      /* Copy data... */
-      atm2.np=los.np;
-      for(ip=0; ip<los.np; ip++) {
-	atm2.time[ip]=obs.time[ir];
-	atm2.z[ip]=los.z[ip];
-	atm2.lon[ip]=los.lon[ip];
-	atm2.lat[ip]=los.lat[ip];
-	atm2.p[ip]=los.p[ip];
-	atm2.t[ip]=los.t[ip];
-	for(ig=0; ig<ctl.ng; ig++)
-	  atm2.q[ig][ip]=los.q[ip][ig];
-	for(iw=0; iw<ctl.nw; iw++)
-	  atm2.k[iw][ip]=los.k[ip][iw];
-      }
-      
-      /* Save data... */
-      sprintf(filename, "%s.%d", losbase, ir);
-      write_atm(NULL, filename, &ctl, &atm2);
-    }
+    /* Loop over LOS points... */
+    for(ip=0; ip<los.np; ip++) {
+      fprintf(out, "%.2f %g %g %g %g %g", obs.time[ir],
+	      los.z[ip], los.lon[ip], los.lat[ip],
+	      los.p[ip], los.t[ip]);
+      for(ig=0; ig<ctl.ng; ig++)
+	fprintf(out, " %g", los.q[ip][ig]);
+      for(iw=0; iw<ctl.nw; iw++)
+	fprintf(out, " %g", los.k[ip][iw]);
+      for(ig=0; ig<ctl.ng; ig++)
+	fprintf(out, " %g", los.u[ip][ig]);
+      for(id=0; id<ctl.nd; id++)
+	fprintf(out, " %g", aero.beta_e[los.aeroi[ip]][id]*los.aerofac[ip]);
+      for(id=0; id<ctl.nd; id++)
+	fprintf(out, " %g", aero.beta_s[los.aeroi[ip]][id]*los.aerofac[ip]);
+      for(id=0; id<ctl.nd; id++)
+	fprintf(out, " %g", aero.beta_a[los.aeroi[ip]][id]*los.aerofac[ip]);
+      fprintf(out, " %g", los.ds[ip]);      
 
-    /* Number and column densities... */
-    if(massbase[0]!='-') {
-      
-      /* Copy data... */
-      for(ip=0; ip<los.np; ip++) {
-	atm2.p[ip]=atm2.t[ip]=0;
-	for(ig=0; ig<ctl.ng; ig++)
-	  atm2.q[ig][ip]=los.u[ip][ig]/(los.ds[ip]*1e5);
-	for(iw=0; iw<ctl.nw; iw++)
-	  atm2.k[iw][ip]=0;
-      }
-      
-      /* Save data... */
-      sprintf(filename, "%s.numdens.%d", massbase, ir);
-      write_atm(NULL, filename, &ctl, &atm2);
-      
-      /* Copy data... */
-      for(ip=0; ip<los.np; ip++)
-	for(ig=0; ig<ctl.ng; ig++)
-	  atm2.q[ig][ip]=cgu[ip][ig];
-      
-      /* Save data... */
-      sprintf(filename, "%s.coldens.%d", massbase, ir);
-      write_atm(NULL, filename, &ctl, &atm2);
+      fprintf(out, "\n");
     }
+    
+    /* Close file... */
+    fclose(out);
+
+    printf("Wrote output to %s \n",filename);
   }
-  
-  /* Close file... */
-  fclose(out);
-  
+
+
+
   return EXIT_SUCCESS;
 }

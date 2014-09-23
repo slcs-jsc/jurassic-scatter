@@ -32,9 +32,9 @@ void init_tbl(ctl_t *ctl,
 	      tbl_t *tbl);
 
 /* Find array index. */
-int locate(double *xx,
-	   int n,
-	   double x);
+int locate(double *xx,  /* array */
+	   int n,       /* array size */ 
+	   double x);   /* value */
 
 /* Read observation data. */
 /* Reads observations e.g for retrieval */

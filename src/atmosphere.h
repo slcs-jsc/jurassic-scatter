@@ -4,7 +4,7 @@
 /* Module for atmosphere related functions. */
 
 #include "jurassic.h"
-#include "sonstige.h"
+#include "misc.h"
 
 /* ------------------------------------------------------------
    Functions...

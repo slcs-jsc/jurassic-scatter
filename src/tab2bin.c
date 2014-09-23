@@ -1,6 +1,6 @@
 #include "jurassic.h"
 #include "control.h"
-#include "sonstige.h"
+#include "misc.h"
 
 int main(int argc, char *argv[]) {
   
@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
   /* Loop over emitters... */
   for(ig=0; ig<ctl.ng; ig++) {
 
-    /* Loop over detectors... */
+    /* Loop over channels... */
     for(id=0; id<ctl.nd; id++) {
       
       /* Set filename... */
@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
       if(!(out=fopen(filename, "w")))
         ERRMSG("Cannot create file!");
       
-      /* Read data... */
+      /* Write data... */
       FWRITE(&tbl->np[ig][id], int, 1, out);
       FWRITE(&tbl->p[ig][id], double, tbl->np[ig][id], out);
       FWRITE(tbl->nt[ig][id], int, tbl->np[ig][id], out);

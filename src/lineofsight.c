@@ -11,8 +11,8 @@ void raytrace(ctl_t *ctl,
   
   double cosa, d, dmax, dmin=0, ds, ex0[3], ex1[3], h=0.02, k[NWMAX],
     lat, lon, n, naux, ng[3], norm, p, q[NGMAX], 
-    t, x[3], xh[3], xobs[3], xvp[3], z=1e99, zmax, zmin, zrefrac=60;
-    
+    t, x[3], xh[3], xobs[3], xvp[3], z=1e99, zmax, zmin, zrefrac=25;
+  /*zrefrac=60 */
   int i, ig, ip, iw, stop=0;
 
   /* Initialize... */
@@ -236,6 +236,7 @@ void add_aerosol_layers(ctl_t *ctl,
   altimin = gsl_stats_min(alti, 1, (size_t)jl);
 
   /* Copy los to new los and add additional points */
+  los_aero.tsurf = los->tsurf;
   los_aero.z[0] = los->z[0];
   los_aero.lat[0] = los->lat[0];
   los_aero.lon[0] = los->lon[0];

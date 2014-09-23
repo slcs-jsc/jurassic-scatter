@@ -171,7 +171,7 @@ void formod_pencil(ctl_t *ctl,
   
   los_t *los;  
   
-  double beta_ctm[NDMAX], beta_ext_tot, dx[3], eps, src_planck[NDMAX],
+  double beta_ctm[NDMAX], beta_ext_tot, dx[3], eps, eps_sca, src_planck[NDMAX],
     src_sca[NDMAX], tau_path[NGMAX][NDMAX], tau_gas[NDMAX], x[3], x0[3], x1[3];
   
   int i, id, ip, ip0, ip1;
@@ -220,6 +220,7 @@ void formod_pencil(ctl_t *ctl,
       geo2cart(los->z[ip1], los->lon[ip1], los->lat[ip1], x1);
       for(i=0; i<3; i++)
 	dx[i]=x1[i]-x0[i];
+
       srcfunc_sca(ctl,atm,aero,obs->time[ir],x,dx,los->aeroi[ip],src_sca,scattering);
       
       /* Loop over channels... */
@@ -227,19 +228,25 @@ void formod_pencil(ctl_t *ctl,
 	if(tau_gas[id]>0) {
 
 	  /* Get gas and aerosol/cloud extinctions... */
-	  beta_ext_tot = -log(tau_gas[id])/los->ds[ip]+beta_ctm[id] + 
-	    los->aerofac[ip]*aero->beta_e[los->aeroi[ip]][id]; 
-
-	  /* Get segment emissivity (epsilon = 1-t_gas*t_aerosol) ... */
-	  eps=1-tau_gas[id]*exp(-(beta_ctm[id]+los->aerofac[ip]*
-				  aero->beta_a[los->aeroi[ip]][id])*los->ds[ip]);
-
-	  /* Compute radiance... */
-	  obs->rad[id][ir] += obs->tau[id][ir] * 
-	    (eps * src_planck[id] + aero->beta_s[los->aeroi[ip]][id]*src_sca[id]);
+	  beta_ext_tot = (-1.)*log(tau_gas[id])/los->ds[ip] + beta_ctm[id] + 
+	                 los->aerofac[ip]*aero->beta_e[los->aeroi[ip]][id]; 
 	  
+	  /* ----------------------------------------------------------------*/
+	  /* Get segment emissivity (epsilon = 1-t_gas*t_aerosol) ... */
+	  eps = 1-tau_gas[id]*exp(-1.*(beta_ctm[id]+los->aerofac[ip]*
+				       aero->beta_a[los->aeroi[ip]][id])*los->ds[ip]);
+
+	  eps_sca = 1-exp(-1.*los->aerofac[ip]*aero->beta_s[los->aeroi[ip]][id]*
+			  los->ds[ip]);
+	  
+	  /* Compute radiance... */
+	  /* obs->rad[id][ir] += obs->tau[id][ir] *  */
+	  /*   (eps * src_planck[id] + aero->beta_s[los->aeroi[ip]][id]*src_sca[id]); */
+	  obs->rad[id][ir] += obs->tau[id][ir]*(eps*src_planck[id]+eps_sca*src_sca[id]); 
+	  /* ----------------------------------------------------------------*/
+
 	  /* Compute path transmittance... */
-	  obs->tau[id][ir] *= exp(-beta_ext_tot*los->ds[ip]);
+	  obs->tau[id][ir] *= exp(-1.*beta_ext_tot*los->ds[ip]);
 	}
     }
     
@@ -255,24 +262,18 @@ void formod_pencil(ctl_t *ctl,
 	    eps=1-tau_gas[id]*exp(-1. * beta_ctm[id] * los->ds[ip]);
 	  }
 	  else if (strcmp(ctl->sca_ext, "beta_a")) {
-	    eps=1-tau_gas[id]*exp(-(beta_ctm[id]+los->aerofac[ip]*
-				    aero->beta_a[los->aeroi[ip]][id])*los->ds[ip]);
+	    eps=1-tau_gas[id]*exp(-1. * (beta_ctm[id] + los->aerofac[ip]*
+					 aero->beta_a[los->aeroi[ip]][id])*los->ds[ip]);
 	  } else {
-	    eps=1-tau_gas[id]*exp(-(beta_ctm[id]+los->aerofac[ip]*
-				    aero->beta_e[los->aeroi[ip]][id])*los->ds[ip]);
+	    eps=1-tau_gas[id]*exp(-1. * (beta_ctm[id] + los->aerofac[ip]*
+					 aero->beta_e[los->aeroi[ip]][id])*los->ds[ip]);
 	  }
 	  
 	  /* Compute radiance... */
 	  obs->rad[id][ir]+=src_planck[id]*eps*obs->tau[id][ir];
 	  
 	  /* Compute path transmittance... */
-	  if (ctl->sca_n==0) {
-	    obs->tau[id][ir]*=(1-eps);
-	  } else if (strcmp(ctl->sca_ext, "beta_a")) {
-	    obs->tau[id][ir]*=(1-eps)*exp(-los->aerofac[ip]*aero->beta_a[los->aeroi[ip]][id]*los->ds[ip]);
-	  } else {
-	    obs->tau[id][ir]*=(1-eps)*exp(-los->aerofac[ip]*aero->beta_e[los->aeroi[ip]][id]*los->ds[ip]);
-	  } 
+	  obs->tau[id][ir]*=(1-eps);
 	}
     }
   }
@@ -283,7 +284,7 @@ void formod_pencil(ctl_t *ctl,
     for(id=0; id<ctl->nd; id++)
       obs->rad[id][ir]+=src_planck[id]*obs->tau[id][ir];
   }
-  
+
   /* Free... */
   free(los);
 }
@@ -468,7 +469,7 @@ void read_shape(const char *filename,
   char line[LEN];
   
   /* Write info... */
-  printf("Read shape function: %s\n", filename);
+  /*printf("Read shape function: %s\n", filename); */
   
   /* Open file... */
   if(!(in=fopen(filename, "r")))
@@ -514,7 +515,7 @@ void read_tbl(ctl_t *ctl,
       if((in=fopen(filename, "r"))) {
 	
 	/* Write info... */
-	printf("Read emissivity table: %s\n", filename);
+	/* printf("Read emissivity table: %s\n", filename); */
 	
 	/* Read data... */
 	FREAD(&tbl->np[ig][id], int, 1, in);

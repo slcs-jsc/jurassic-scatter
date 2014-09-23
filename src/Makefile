@@ -6,10 +6,12 @@
 EXC = brightness climatology collect formod interpolate kernel limb nadir planck raytrace retrieval tab2bin
 
 # Library directories...
-LIBDIR = -L /usr/lib64 -L /usr/local/lib -L ../lib/build/lib64 -L /usr/lib
+#LIBDIR = -L /usr/lib64 -L /usr/local/lib -L ../lib/build/lib64 -L /usr/lib
+LIBDIR = -L /usr/lib64 -L /usr/local_64/netcdf/v4.3.2/lib64
 
 # Include directories...
 INCDIR = -I /usr/local/include  -I ../lib/build/include -I /usr/include
+#INCDIR = -I /usr/local_64 -I /usr/local/include  -I ../lib/build/include -I /usr/include 
 
 # OpenMP...
 #OMP = 1
@@ -49,8 +51,8 @@ LDFLAGS = $(LIBDIR) -lnetcdf -lgsl -lgslcblas -lm
 all: $(EXC)
 	rm -f *~
 
-$(EXC): %: %.c  atmosphere.o continua.o control.o forwardmodel.o lineofsight.o retrievalmodel.o scatter.o sonstige.o Makefile
-	$(CC) $(CFLAGS) -o $@ $< atmosphere.o continua.o control.o forwardmodel.o lineofsight.o retrievalmodel.o scatter.o sonstige.o $(LDFLAGS)
+$(EXC): %: %.c  atmosphere.o continua.o control.o forwardmodel.o lineofsight.o misc.o retrievalmodel.o scatter.o Makefile
+	$(CC) $(CFLAGS) -o $@ $< atmosphere.o continua.o control.o forwardmodel.o lineofsight.o misc.o retrievalmodel.o scatter.o  $(LDFLAGS)
 
 atmosphere.o: atmosphere.c 
 	$(CC) $(CFLAGS) -c atmosphere.c
@@ -67,14 +69,15 @@ forwardmodel.o: forwardmodel.c
 lineofsight.o: lineofsight.c 
 	$(CC) $(CFLAGS) -c lineofsight.c
 
+misc.o: misc.c 
+	$(CC) $(CFLAGS) -c misc.c
+
 retrievalmodel.o: retrievalmodel.c 
 	$(CC) $(CFLAGS) -c retrievalmodel.c
 
 scatter.o: scatter.c 
 	$(CC) $(CFLAGS) -c scatter.c
 
-sonstige.o: sonstige.c 
-	$(CC) $(CFLAGS) -c sonstige.c
 
 
 bak:

@@ -145,7 +145,7 @@
 #define NWMAX 5
 
 /* Maximum number of radiance channels. */
-#define NDMAX 50
+#define NDMAX 202
 
 /* Maximum number of emitters. */
 #define NGMAX 15

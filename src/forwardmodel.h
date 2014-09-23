@@ -6,7 +6,7 @@
 #include "lineofsight.h"
 #include "atmosphere.h"
 #include "continua.h"
-#include "sonstige.h"
+#include "misc.h"
 
 /* Compute brightness temperature. */
 double brightness(double rad,

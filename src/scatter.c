@@ -548,7 +548,7 @@ void srcfunc_sca(ctl_t *ctl,
     srcfunc_sca_3d(ctl, atm, aero, x, dx, il, src_sca, scattering);
   
   /* Compute scattering of solar radiation... */
-  if(TSUN>0) 
+  if(TSUN>0)
     srcfunc_sca_sun(ctl, atm, aero, sec, x, dx, il, src_sca);
 }
 
@@ -566,9 +566,9 @@ void srcfunc_sca_1d(ctl_t *ctl,
   obs_t *obs2;
   
   double alpha[NTHETA], alpha2, dnorth[3], ek[3], lx[3], ly[3], lz[3], phi,
-    phase2, rad, sx[3], sy[3], sz[3], theta[NTHETA], theta2, w, wsum=0, xv[3];
+    phase2, rad, sx[3], sy[3], sz[3], theta[NTHETA], theta2, w=0, wsum[NDMAX], xv[3];
   
-  int i, id, idx, iphi, ir, itheta, nalpha=28, nphi=180, ntheta2=180;
+  int i, id, idp, idx, iphi, ir, itheta, nalpha=28, nphi=180, ntheta2=180;
 
   int n1=1, n2=2;
   double midang=83, up=92, down=81, step=1+2;
@@ -578,7 +578,7 @@ void srcfunc_sca_1d(ctl_t *ctl,
   
   /* Set scattering phase function angles... */
   for(itheta=0; itheta<NTHETA; itheta++)
-    theta[itheta]=M_PI*(double)itheta/(NTHETA-1);
+    theta[itheta]=(double)itheta*M_PI/180.;
   
   /* Get local coordinate system... */
   dnorth[0]=-x[0];
@@ -589,35 +589,37 @@ void srcfunc_sca_1d(ctl_t *ctl,
   /* Set angles - tested version with nalpha=28 and Fibonacci Numbers */
   alpha[0] = 0;
   for (ir=nalpha/2-4; ir<nalpha/2+4; ++ir){
-    alpha[ir] = midang/(2*M_PI);
+    alpha[ir] = midang*M_PI/180.;
     midang++;
   }
   for (ir=0; ir<nalpha/2-5; ++ir){
-    alpha[nalpha/2+ir+4] = up/(2*M_PI);
-    alpha[nalpha/2-ir-5] = down/(2*M_PI);
+    alpha[nalpha/2+ir+4] = up*M_PI/180.;
+    alpha[nalpha/2-ir-5] = down*M_PI/180.;
     up+=step;
     down-=step;
     if (step < 13){
       step = (double)n1 + (double)n2;
       n1 = n2;
       n2 = (int)step;
-    }
+    } 
   }
-  alpha[nalpha-1] = 180./(2.*M_PI);
+  alpha[nalpha-1] = M_PI;
 
   /* Get incident radiation... */
+  /* nalpha=181; */
   for(ir=0; ir<nalpha; ir++) {
     
     /* Set angle... */
     /* traditional 0-180 deg in 1 deg steps with nalpha=181 */
-    /* alpha[ir] = ir; */
+    /* alpha[ir] = ir*M_PI/180.; */
 
     /* initial version with nalpha=21 */
     /* alpha[ir]=acos(2*(double)ir/(nalpha-1.0)-1.0); */
   
     /* Set view point... */
     for(i=0; i<3; i++)
-      xv[i]=x[i]+10*cos(alpha[ir])*lz[i]+10*sin(alpha[ir])*ly[i];
+      /* xv[i]=x[i]+10.*cos(alpha[ir])*lz[i]+10.*sin(alpha[ir])*ly[i];  */
+      xv[i]=x[i]+10.*cos(alpha[ir])*(-1)*lz[i]+10.*sin(alpha[ir])*ly[i];
     
     /* Set observation geometry... */
     obs2->nr=nalpha;
@@ -632,20 +634,22 @@ void srcfunc_sca_1d(ctl_t *ctl,
   bascoord(dx, x, sx, sy, sz);  
   
   /* Initialize... */
-  for(id=0; id<ctl->nd; id++)
+  for(id=0; id<ctl->nd; id++){
     src_sca[id]=0;
+    wsum[id]=0;
+  }
   
   /* Loop over phase function angles... */
   for(itheta=0; itheta<ntheta2; itheta++) {
     
-    /* Set phase function angle (avoid 0 and 180°)... */
-    theta2=(0.5+itheta)/ntheta2*M_PI;
+    /* Set phase function angle in 1° steps (avoid 0 and 180°)... */
+    theta2=(0.5+itheta)*M_PI/180.;
     
     /* Loop over azimuth angles... */
     for(iphi=0; iphi<nphi; iphi++) {
       
-      /* Set azimuth angle... */
-      phi=(0.5+iphi)/nphi*2*M_PI;
+      /* Set azimuth angle in 2° steps... */
+      phi=2.*(0.5+iphi)*M_PI/180.;
       
       /* Get unit vector on sphere... */
       for(i=0; i<3; i++)
@@ -655,38 +659,38 @@ void srcfunc_sca_1d(ctl_t *ctl,
 	  +cos(theta2)*sz[i];
 
       /* Get phase function index */
-      idx=locate(theta, NTHETA, theta2);
+      idp=locate(theta, NTHETA, theta2);
 
       /* Get zenith angle... */
-      alpha2=ANGLE(lz, ek);
+      alpha2=ANGLE(-1.*lz, ek);
 
-      /* Get angle index */
+      /* Get source ray angle index */
       idx=locate(alpha, nalpha, alpha2);
 	
       /* Loop over channels... */
       for(id=0; id<ctl->nd; id++) {
 	
 	/* Interpolate phase function... */
-	phase2=LIN(theta[idx], aero->p[il][id][idx],
-		   theta[idx+1], aero->p[il][id][idx+1], theta2);
+	phase2=LIN(theta[idp], aero->p[il][id][idp],
+		   theta[idp+1], aero->p[il][id][idp+1], theta2);
 
 	/* Get weighting factor (area of surface element * phase function)... */
 	w=sin(theta2)*phase2;
 	
 	/* Interpolate radiance to particular angle... */
 	rad=LIN(alpha[idx], obs2->rad[id][idx],
-		alpha[idx+1], obs2->rad[id][idx+1], alpha2);
+	 	alpha[idx+1], obs2->rad[id][idx+1], alpha2);
 	
 	/* Integrate... */
 	src_sca[id]+=w*rad;
-	wsum+=w;
+	wsum[id]+=w;
       }
     }
   }
   
   /* Normalize... */
   for(id=0; id<ctl->nd; id++)
-    src_sca[id]/=wsum;
+    src_sca[id]/=wsum[id]; 
   
   /* Free... */
   free(obs2);
