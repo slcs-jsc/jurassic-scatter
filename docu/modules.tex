@@ -6,7 +6,7 @@ The \texttt{brightness} programme calculates the brightness temperature in K for
 \emph{Example}\linebreak
 \begin{minted}[frame=lines,bgcolor=peach,formatcom=\color{black},linenos]{bash}
 ../src/brightness [radiance] [wavenumber]
-../src/climatology 0.0231451 960
+../src/brightness 0.0231451 960
 \end{minted}
 
 \subsubsection{climatology}
@@ -27,7 +27,7 @@ The Remedios climatology \texttt{clim\_remedios.tab} is in the \texttt{clim} fol
 \todo
 
 \subsubsection{formod}
-The \texttt{formod} module is the programme that starts a forward simulation. The minimum required input are the control file (Section~\ref{sec:ControlFile}), the observation file (Section~\ref{sec:ObservationFile}), the atmosphere file (Section~\ref{sec:AtmosphereFile}) and the output file (Section~\ref{sec:Output}).
+The \texttt{formod} module is the programme that starts a forward simulation. The minimum required input are the control file (Section~\ref{sec:ControlFile}), the observation file (Section~\ref{sec:ObservationFile}), the atmosphere file (Section~\ref{sec:AtmosphereFile}) and the name of an output file (Section~\ref{sec:Output}).
 
 Optional are TASK, DIRLIST (Section~\ref{sec:DirlistFile}) and AEROFILE (Section~\ref{sec:AerosolFile}).
 The option TASK c calculates the contribution of each specified trace gas separately. How are the results stored? \todo
@@ -69,7 +69,7 @@ The \texttt{limb} programme creates an observation file (Section~\ref{sec:Observ
 \emph{Example}\linebreak
 \begin{minted} [frame=lines, bgcolor=peach, formatcom=\color{black}, linenos]{bash}
 ../src/limb [control file] [observer altitude] \
-            [min view point altitude] [max view point altitude max] \
+            [min view point altitude] [max view point altitude] \
             [delta altitude] [output]
 ../src/limb aerosol1.ctl 800 5 15 1 obs.tab
 \end{minted} 
@@ -95,11 +95,11 @@ The \texttt{planck} programme returns the Planck radiance in W/(m$^2$ sr cm${^-1
 \end{minted} 
 
 \subsubsection{raytrace}
-The \texttt{raytrace} programme can be used to perform the raytracing for a given geometry in a given atmosphere and to dump out the line of sight points and certain diagnostics into the files \texttt{raytrace.tab} and \texttt{los.0}. Further input options are: LOSBASE, MASSBASE and AEROFILE.
+The \texttt{raytrace} programme can be used to perform the raytracing for a given geometry in a given atmosphere and to dump out the line of sight points and certain diagnostics into the files \texttt{raytrace.tab} and \texttt{los.NR}, where NR indicates the number of the line of sight. Further input options are: LOSBASE, MASSBASE and AEROFILE.
 
 AEROFILE in example line 4 includes an aerosol file, so that the fine sampling around the aerosol/cloud edges is included into the raytracing. (see Section~\ref{sec:lineofsight}
 
-LOSBASE creates the output file \texttt{los.0} if no other name is specified. It is switched on by default. In example line 6 the output file \texttt{liofsi.0} is created. Example line 7 shows how to switch it off.
+LOSBASE creates the output file \texttt{los.NR} if no other name is specified. It is switched on by default. In example line 6 the output file \texttt{liofsi.0} is created. Example line 7 shows how to switch it off.
 
 \begin{sloppypar}
 MASSBASE in example line 8 creates the output files \texttt{mass.numdens.0} and \texttt{mass.coldens.0}. \todo what is in these files?
@@ -121,7 +121,7 @@ MASSBASE in example line 8 creates the output files \texttt{mass.numdens.0} and 
 \todo
 
 \subsubsection{tab2bin}
-The \texttt{tab2bin} programme can be used to convert the ASCII tables to binary format. Using binary format tables significantly reduces the file I/O time during e.g. \texttt{formod} runs. This programme should be run on the architecture where the JURASSIC programmes using these tables will be executed. Please note, tables converted on JUROPA cannot be used on JUQUEEN and vice versa.
+The \texttt{tab2bin} programme can be used to convert the ASCII tables to binary format. Using binary format tables significantly reduces the file I/O time during e.g. \texttt{formod} runs. This programme should be run on the architecture where the JURASSIC programmes using these tables will be executed. Please note, binary tables converted on JUROPA cannot be used on JUQUEEN and vice versa.
 
 \emph{Example}\linebreak
 \begin{minted} [frame=lines, bgcolor=peach, formatcom=\color{black}, linenos]{bash}
@@ -152,13 +152,13 @@ contains macros, constants (Appendix~\ref{app:constants}), dimensions (Appendix~
 contains functions that deal with raytracing and the line of sight
 Aerosol and cloud sampling: Done in raytracing. Extra los points about 5\,m above and below cloud edges.
 
+\subsubsection{misc.h/c}
+contains routines that are used by several other programmes and routines
+
 \subsubsection{retrievalmodel.h/c}
 contains functions that deal with the retrieval
 
 \subsubsection{scatter.h/c}
 contains routines concerning scattering on aerosol and clouds; mie scattering is following \citet{Bohren1983} code; Gauss-Hermite scheme used for integration over log-normal size distribution; scattering of solar radiation included
-
-\subsubsection{sonstige.h/c}
-contains routines that are used by several other programmes and routines
 
 \subsection{Makefile}

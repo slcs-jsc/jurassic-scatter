@@ -93,8 +93,9 @@ The atmosphere file is the setup information for forward simulations. For retrie
 \# \$7 & = & CO2 volume mixing ratio \\
 \# \$8 & = & H2O volume mixing ratio \\
 \# \$9 & = & O3 volume mixing ratio \\
-\# \$XX   & = & XX volume mixing ratio \\
-\# \$XX+1 & = & window 0: extinction [1/km] \\
+\# \$NN   & = & XX volume mixing ratio \\
+\# \$NN+1 & = & window 0: extinction [1/km] \\
+\# \$NN+2 & = & window 1: extinction [1/km] \\
 \end{tabular}
 \end{table*} 
 
@@ -147,7 +148,7 @@ TBLBASE     & look-up table path and prefix & ``-'' & \\
 \multicolumn{4}{|l|}{\cellcolor[RGB]{255,204,230}{Hydrostatic equilibrium}} \\
 \hline  
 HYDZ        & reference height for hydrostatic & -999 & -999: skip this option \\
-            & pressure profile                 &      & in km??? \\
+            & pressure profile                 &      & in km \\
 \hline
 \hline
 
@@ -209,9 +210,9 @@ IP             & interpolation method            & 1     & 1: profile \\
                &                                 &       & 2: satellite track \\
                &                                 &       & 3: Lagrangian grid \\ 
 CZ             & influence length for vertical   & 0     & in km \\
-               & interpolation                   &       &   \\
+               & interpolation for IP=3          &       &   \\
 CX             & influence length for horizontal & 0     & in km \\ 
-               & interpolation                   &       &   \\
+               & interpolation for IP=3          &       &   \\
 \hline
 \hline
 
@@ -346,9 +347,9 @@ The observation file (\texttt{obs.tab}) is a multi-column list containing the ge
 \# \$9 & = & tangent point longitude [deg] \\
 \# \$10 & = & tangent point latitude [deg] \\
 \# \$11 & = & channel 792: radiance [W/(m$^2$ sr cm$^{-1}$)] \\
-\# \$12 & = & channel 792: transmittance \\
-\# \$XX & = & channel XX: radiance [W/(m$^2$ sr cm$^{-1}$] \\
-\# \$XX+1 & = & channel XX: transmittance \\
+\# \$NN & = & channel XX: radiance [W/(m$^2$ sr cm$^{-1}$] \\
+\# \$NN+1 & = & channel 792: transmittance \\
+\# \$NN+2 & = & channel XX: transmittance \\
 \end{tabular}
 \end{table*} 
 
