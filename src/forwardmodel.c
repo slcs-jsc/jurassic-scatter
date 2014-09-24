@@ -252,18 +252,19 @@ void formod_pencil(ctl_t *ctl,
     
     /* Compute radiative transfer without scattering source... */
     else {
-      
+
       /* Loop over channels... */
       for(id=0; id<ctl->nd; id++)
 	if(tau_gas[id]>0) {
-	  
+
 	  /* Get segment emissivity... */
-	  if (ctl->sca_n==0) {
+	  if (ctl->sca_n==0 || los->aerofac[ip]==0 ) {
 	    eps=1-tau_gas[id]*exp(-1. * beta_ctm[id] * los->ds[ip]);
 	  }
-	  else if (strcmp(ctl->sca_ext, "beta_a")) {
+	  else if (strcmp(ctl->sca_ext, "beta_a") == 0) {
+	    
 	    eps=1-tau_gas[id]*exp(-1. * (beta_ctm[id] + los->aerofac[ip]*
-					 aero->beta_a[los->aeroi[ip]][id])*los->ds[ip]);
+					 aero->beta_a[los->aeroi[ip]][id])*los->ds[ip]);  
 	  } else {
 	    eps=1-tau_gas[id]*exp(-1. * (beta_ctm[id] + los->aerofac[ip]*
 					 aero->beta_e[los->aeroi[ip]][id])*los->ds[ip]);
