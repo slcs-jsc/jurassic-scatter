@@ -44,4 +44,3 @@ info "Compare files..."
 compare atm.tab
 compare obs_raytrace.tab
 compare los.0
-compare raytrace.tab

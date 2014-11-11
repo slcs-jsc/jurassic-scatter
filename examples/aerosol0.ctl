@@ -17,8 +17,10 @@ SCA_MULT = 1
 
 
 # Atmosphere/Climatology
-#DZ = 2
-#ZMAX = 60
+DZ = 1
+ZMIN = 0
+ZMAX = 60
+CLIMPATH = /home/zam/sgrie/1/PIRAT/jurassic/clim/
 
 #diese Eingabe ist auch möglich, aber nicht wirklich nötig
 #DIRLIST = dirlist-aero.asc

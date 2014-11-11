@@ -12,8 +12,8 @@ NU[0] = 792
 TBLBASE = tab/boxcar
 
 # Aerosol
-SCA_N = 6
-SCA_MULT = 1
+SCA_N = 1
+SCA_MULT = 0
 
 
 # Atmosphere/Climatology
@@ -21,7 +21,3 @@ DZ = 1
 ZMAX = 80
 ZMIN = 0 
 CLIMPATH = /home/zam/sgrie/1/PIRAT/jurassic/clim/
-
-#diese Eingabe ist auch möglich, aber nicht wirklich nötig
-#DIRLIST = dirlist-aero.asc
-#AEROFILE = aero.tab

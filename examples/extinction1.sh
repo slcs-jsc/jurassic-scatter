@@ -31,15 +31,20 @@ function info {
 # Setup...
 src=../src
 
-#info "Create atmosphere..."
-$src/climatology aerosol0.ctl - atm.tab CLIMZONE pwin || exit
+info "Create atmosphere..."
+$src/climatology extinction1.ctl - atm.tab || exit
 
-#info "Create observation geometry..."
-$src/nadir aerosol0.ctl 800 0 10 1 obs_nadir.tab || exit
+info "Create geometry..."
+#$src/limb extinction1.ctl 800 5 15 1 obs.tab || exit
 
 info "Call forward model..."
-$src/formod aerosol0.ctl obs_nadir.tab atm.tab rad_aero0.tab AEROFILE aero0.tab|| exit
+$src/formod extinction1.ctl obs.tab atm.tab rad_ext1.tab AEROFILE aero0.tab|| exit
 
-info "Compare files..."
-compare obs_nadir.tab
-compare rad_aero0.tab
+# info "Compare files..."
+compare rad_ext1.tab
+# compare atm.tab
+# compare obs.tab
+# compare rad.tab.CO2
+# compare rad.tab.EXTINCT
+# compare rad.tab.H2O
+# compare rad.tab.O3

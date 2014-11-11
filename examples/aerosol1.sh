@@ -41,10 +41,5 @@ info "Call forward model..."
 $src/formod aerosol1.ctl obs.tab atm.tab rad_aero1.tab AEROFILE aero1.tab|| exit
 
 # info "Compare files..."
-# compare atm.tab
-# compare obs.tab
 compare rad_aero1.tab
-# compare rad.tab.CO2
-# compare rad.tab.EXTINCT
-# compare rad.tab.H2O
-# compare rad.tab.O3
+
