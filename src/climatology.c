@@ -32,6 +32,7 @@ typedef struct {
   double clo[121];
   double clono2[121];
   double co[121];
+  double co2[121];
   double cof2[121];
   double f11[121];
   double f12[121];
@@ -64,7 +65,8 @@ void climatology(ctl_t *ctl,
  		 atm_t *atm_mean); 
 
 void get_clim_data(int czone,
-		   clim_t *clim);
+		   clim_t *clim,
+		   char *climpath);
 
 /* ------------------------------------------------------------
    Main...
@@ -80,7 +82,7 @@ int main(int argc, char *argv[]) {
 
   double dz, z, zmax, zmin;
   
-  char zone[LEN];
+  char zone[LEN], climpath[LEN];
 
   int czone=0;
 
@@ -112,7 +114,7 @@ int main(int argc, char *argv[]) {
   
   /* Get climate zone */
   scan_ctl(argc, argv, "CLIMZONE", -1, "midl", zone);
-  
+
   if (strcmp(zone, "midl")==0)
     czone=0;
   if (strcmp(zone, "pwin")==0)
@@ -122,8 +124,11 @@ int main(int argc, char *argv[]) {
   if (strcmp(zone, "equ")==0)
     czone=3;
 
+  /* get path to climatology file */
+  scan_ctl(argc, argv, "CLIMPATH", -1, "", climpath);
+
   /* Get climate zone climatology */
-  get_clim_data(czone, &clim);
+  get_clim_data(czone, &clim, climpath);
 
   /* Interpolate climatological data... */
   climatology(&ctl, &clim, &atm);
@@ -137,7 +142,8 @@ int main(int argc, char *argv[]) {
 /*****************************************************************************/
 
 void get_clim_data(int czone,
-		   clim_t *clim){
+		   clim_t *clim,
+		   char *climpath){
 
   FILE *in;
   char file[LEN], line[LEN], *tok, name[LEN];
@@ -145,7 +151,7 @@ void get_clim_data(int czone,
   double alt, mean, var;
   
   /* Set climate zone identifyer */
-  /* midlatitude - default */
+  /* midlatitude night - default */
   lat = 20;
   month = 1;
   zangle = 0;
@@ -163,7 +169,7 @@ void get_clim_data(int czone,
       
   /* Read in climatology file */
   /* Set filename... */
-  sprintf(file, "%s", "clim_remedios.tab");
+  sprintf(file, "%s%s", climpath, "clim_remedios.tab");
   
   /* Write info... */
   printf("Read climatology: %s\n", file);
@@ -210,6 +216,8 @@ void get_clim_data(int czone,
 	clim->clono2[(int)alt] = mean;
       if (strcmp(name, "CO")==0)
 	clim->co[(int)alt] = mean;
+      /* if (strcmp(name, "CO2")==0) */
+      /* 	clim->co2[(int)alt] = mean; */
       if (strcmp(name, "COF2")==0)
 	clim->cof2[(int)alt] = mean;
       if (strcmp(name, "F11")==0)
@@ -240,6 +248,8 @@ void get_clim_data(int czone,
 	clim->nh3[(int)alt] = mean;
       if (strcmp(name, "NO")==0)
 	clim->no[(int)alt] = mean;
+      if (strcmp(name, "NO2")==0)
+	clim->no2[(int)alt] = mean;
       if (strcmp(name, "O3")==0)
 	clim->o3[(int)alt] = mean;
       if (strcmp(name, "OCS")==0)
@@ -281,6 +291,7 @@ void climatology(ctl_t *ctl,
     if(strcasecmp(ctl->emitter[ig], "ClO")==0) q[ig]=clim->clo;
     if(strcasecmp(ctl->emitter[ig], "ClONO2")==0) q[ig]=clim->clono2;
     if(strcasecmp(ctl->emitter[ig], "CO")==0) q[ig]=clim->co;
+    /* if(strcasecmp(ctl->emitter[ig], "CO2")==0) q[ig]=clim->co2; */
     if(strcasecmp(ctl->emitter[ig], "COF2")==0) q[ig]=clim->cof2;
     if(strcasecmp(ctl->emitter[ig], "F11")==0) q[ig]=clim->f11;
     if(strcasecmp(ctl->emitter[ig], "F12")==0) q[ig]=clim->f12;
@@ -327,6 +338,7 @@ void climatology(ctl_t *ctl,
     /* Set CO2... */
     if(ig_co2>=0) {
       co2=371.92429e-6+1.840618e-6*(atm->time[ip]-63158400.)/31557600.;
+      /* co2=co2*1; */
       atm->q[ig_co2][ip]=co2;
     }
     

@@ -11,8 +11,8 @@ void raytrace(ctl_t *ctl,
   
   double cosa, d, dmax, dmin=0, ds, ex0[3], ex1[3], h=0.02, k[NWMAX],
     lat, lon, n, naux, ng[3], norm, p, q[NGMAX], 
-    t, x[3], xh[3], xobs[3], xvp[3], z=1e99, zmax, zmin, zrefrac=25;
-  /*zrefrac=60 */
+    t, x[3], xh[3], xobs[3], xvp[3], z=1e99, zmax, zmin, zrefrac=60;
+  /*zrefrac=25*/
   int i, ig, ip, iw, stop=0;
 
   /* Initialize... */

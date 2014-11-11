@@ -151,7 +151,7 @@
 #define NGMAX 15
 
 /* Maximum number of LOS points. */
-#define NLOS 1000
+#define NLOS 10000
 
 /* Maximum number of atmospheric data points. */
 #define NPMAX 1000

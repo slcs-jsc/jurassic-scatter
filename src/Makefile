@@ -14,7 +14,7 @@ INCDIR = -I /usr/local/include  -I ../lib/build/include -I /usr/include
 #INCDIR = -I /usr/local_64 -I /usr/local/include  -I ../lib/build/include -I /usr/include 
 
 # OpenMP...
-#OMP = 1
+OMP = 1
 
 # Profiling...
 #PROF = 1

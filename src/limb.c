@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
   /* Create measurement geometry... */
   for(z=zmin; z<=zmax; z+=dz) {
     obs.obsz[obs.nr]=obsz;
-    obs.obslat[obs.nr]=180/M_PI*acos((RE+z)/(RE+obsz));
+    obs.obslat[obs.nr]=180./M_PI*acos((RE+z)/(RE+obsz));
     obs.vpz[obs.nr]=z;
     if((++obs.nr)>=NRMAX)
       ERRMSG("Too many rays!");
