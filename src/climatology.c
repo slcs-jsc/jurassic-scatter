@@ -115,13 +115,13 @@ int main(int argc, char *argv[]) {
   /* Get climate zone */
   scan_ctl(argc, argv, "CLIMZONE", -1, "midl", zone);
 
-  if (strcmp(zone, "midl")==0)
+  if (strcmp(zone, "midln")==0)
     czone=0;
   if (strcmp(zone, "pwin")==0)
     czone=1;
   if (strcmp(zone, "psum")==0)
     czone=2;
-  if (strcmp(zone, "equ")==0)
+  if (strcmp(zone, "equn")==0)
     czone=3;
 
   /* get path to climatology file */
