@@ -29,6 +29,15 @@ int main(int argc, char *argv[]) {
   
   char dirlist[LEN], wrkdir[LEN], task[LEN], aerofile[LEN];
   
+  /* ###################################################################### */
+  int ierr, myrank=0, numprocs=1, nfiles=-1;
+  /* ###################################################################### */
+
+  /* Initialize MPI */
+  ierr = MPI_Init(&argc, &argv);
+  ierr = MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+  ierr = MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
+
   /* Check arguments... */
   if(argc<5)
     ERRMSG("Give parameters: <ctl> <obs> <atm> <rad>");
@@ -58,7 +67,10 @@ int main(int argc, char *argv[]) {
     
     /* Loop over directories... */
     while(fscanf(in, "%s", wrkdir)!=EOF) {
-      
+
+      nfiles++;
+      if (nfiles%numprocs != myrank) continue;
+
       /* Write info... */
       printf("\nWorking directory: %s\n", wrkdir);
       
@@ -69,7 +81,7 @@ int main(int argc, char *argv[]) {
     /* Close dirlist... */
     fclose(in);
   }
-  
+  ierr = MPI_Finalize();
   return EXIT_SUCCESS;
 }
 

@@ -135,6 +135,7 @@ void init_tbl(ctl_t *ctl,
 	/* Try to open file... */
 	sprintf(filename, "%s_%.4f_%s.tab",
 		ctl->tblbase, ctl->nu[id], ctl->emitter[ig]);
+
 	if(!(in=fopen(filename, "r"))) {
 	  LOGMSG(2, printf("Missing emissivity table: %s\n", filename));
 	  continue;

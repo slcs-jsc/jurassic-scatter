@@ -195,9 +195,16 @@ void add_aerosol_layers(ctl_t *ctl,
 			los_t *los,
 			aero_t *aero){
 
-  los_t los_aero;
+  los_t *los_aero;
+
   double alti[4*NLMAX], altimax, altimin, x1[3], x2[3], x3[3], tt=0.; 
+
   int il, ig, iw, jl=0, ip, it;
+
+  size_t s;
+
+  /* Allocate extended los... */
+  ALLOC(los_aero, los_t, 1);
 
   /* Create altitudes to sample aerosol edges */
   for (il=0; il<aero->nl;il++){
@@ -236,18 +243,18 @@ void add_aerosol_layers(ctl_t *ctl,
   altimin = gsl_stats_min(alti, 1, (size_t)jl);
 
   /* Copy los to new los and add additional points */
-  los_aero.tsurf = los->tsurf;
-  los_aero.z[0] = los->z[0];
-  los_aero.lat[0] = los->lat[0];
-  los_aero.lon[0] = los->lon[0];
-  los_aero.ds[0] = los->ds[0];  
-  los_aero.t[0] = los->t[0];
-  los_aero.p[0] = los->p[0];
+  los_aero->tsurf = los->tsurf;
+  los_aero->z[0] = los->z[0];
+  los_aero->lat[0] = los->lat[0];
+  los_aero->lon[0] = los->lon[0];
+  los_aero->ds[0] = los->ds[0];  
+  los_aero->t[0] = los->t[0];
+  los_aero->p[0] = los->p[0];
   for(ig=0; ig<ctl->ng; ig++)
-    los_aero.q[0][ig] = los->q[0][ig];
+    los_aero->q[0][ig] = los->q[0][ig];
   for(iw=0; iw<ctl->nw; iw++)
-    los_aero.k[0][iw] = los->k[0][iw];
-  los_aero.np = 1;
+    los_aero->k[0][iw] = los->k[0][iw];
+  los_aero->np = 1;
 
   for (ip=1; ip<los->np; ip++){
     
@@ -257,79 +264,82 @@ void add_aerosol_layers(ctl_t *ctl,
       for (il=0; il<jl;il++){ /* loop over cloud edges */
 	/* von oben */
 	if(los->z[ip-1] > alti[il] && los->z[ip] < alti[il]){
-	  intersection_point(ctl, atm, &alti[il], los, ip, &los_aero, los_aero.np);
-	  los_aero.np++; 
+	  intersection_point(ctl, atm, &alti[il], los, ip, los_aero, los_aero->np);
+	  los_aero->np++; 
 	}
 	/* von unten */
 	if(los->z[ip-1] < alti[jl-il-1] && los->z[ip] > alti[jl-il-1]){
-	  intersection_point(ctl, atm, &alti[jl-il-1], los, ip, &los_aero, los_aero.np);
-	  los_aero.np++;
+	  intersection_point(ctl, atm, &alti[jl-il-1], los, ip, los_aero, los_aero->np);
+	  los_aero->np++;
 	}
       }
     }
 
     /* copy old los points */
-    los_aero.z[los_aero.np] = los->z[ip];
-    los_aero.lat[los_aero.np] = los->lat[ip];
-    los_aero.lon[los_aero.np] = los->lon[ip];
-    los_aero.t[los_aero.np] = los->t[ip];
-    los_aero.p[los_aero.np] = los->p[ip];
+    los_aero->z[los_aero->np] = los->z[ip];
+    los_aero->lat[los_aero->np] = los->lat[ip];
+    los_aero->lon[los_aero->np] = los->lon[ip];
+    los_aero->t[los_aero->np] = los->t[ip];
+    los_aero->p[los_aero->np] = los->p[ip];
     for(ig=0; ig<ctl->ng; ig++)
-      los_aero.q[los_aero.np][ig] = los->q[ip][ig];
+      los_aero->q[los_aero->np][ig] = los->q[ip][ig];
     for(iw=0; iw<ctl->nw; iw++)
-      los_aero.k[los_aero.np][iw] = los->k[ip][iw];
-    los_aero.np++; 
+      los_aero->k[los_aero->np][iw] = los->k[ip][iw];
+
+    /* Increment and check number of new LOS points */
+    if((los_aero->np++)>NLOS)
+      ERRMSG("Too many LOS points!");
   }
 
   /* Compute segment length following trapezoidal rule */
-  geo2cart(los_aero.z[0], los_aero.lon[0],los_aero.lat[0], x1);
-  geo2cart(los_aero.z[1], los_aero.lon[1],los_aero.lat[1], x2);
-  los_aero.ds[0]= 0.5 * (DIST(x1,x2));
-  for(ip=1; ip<los_aero.np-1; ip++){
-    geo2cart(los_aero.z[ip-1], los_aero.lon[ip-1],los_aero.lat[ip-1], x1);
-    geo2cart(los_aero.z[ip], los_aero.lon[ip],los_aero.lat[ip], x2);
-    geo2cart(los_aero.z[ip+1], los_aero.lon[ip+1],los_aero.lat[ip+1], x3);
-    los_aero.ds[ip] = 0.5 * (DIST(x1,x2) + DIST(x2,x3));
+  geo2cart(los_aero->z[0], los_aero->lon[0],los_aero->lat[0], x1);
+  geo2cart(los_aero->z[1], los_aero->lon[1],los_aero->lat[1], x2);
+  los_aero->ds[0]= 0.5 * (DIST(x1,x2));
+  for(ip=1; ip<los_aero->np-1; ip++){
+    geo2cart(los_aero->z[ip-1], los_aero->lon[ip-1],los_aero->lat[ip-1], x1);
+    geo2cart(los_aero->z[ip], los_aero->lon[ip],los_aero->lat[ip], x2);
+    geo2cart(los_aero->z[ip+1], los_aero->lon[ip+1],los_aero->lat[ip+1], x3);
+    los_aero->ds[ip] = 0.5 * (DIST(x1,x2) + DIST(x2,x3));
   }
-  geo2cart(los_aero.z[los_aero.np-1], los_aero.lon[los_aero.np-1], 
-	   los_aero.lat[los_aero.np-1], x1);
-  geo2cart(los_aero.z[los_aero.np-2], los_aero.lon[los_aero.np-2], 
-	   los_aero.lat[los_aero.np-2], x2);
-  los_aero.ds[los_aero.np-1] = 0.5 * (DIST(x1,x2));
+  geo2cart(los_aero->z[los_aero->np-1], los_aero->lon[los_aero->np-1], 
+	   los_aero->lat[los_aero->np-1], x1);
+  geo2cart(los_aero->z[los_aero->np-2], los_aero->lon[los_aero->np-2], 
+	   los_aero->lat[los_aero->np-2], x2);
+  los_aero->ds[los_aero->np-1] = 0.5 * (DIST(x1,x2));
 
   /* add aerosol/cloud information and column density u to new los  */
-  for (ip=0; ip<los_aero.np; ip++){
+  for (ip=0; ip<los_aero->np; ip++){
 
     /* Compute column density... */
     for(ig=0; ig<ctl->ng; ig++)
-      los_aero.u[ip][ig]=10*los_aero.q[ip][ig]*los_aero.p[ip]
-	/(GSL_CONST_MKSA_BOLTZMANN*los_aero.t[ip])*los_aero.ds[ip];
+      los_aero->u[ip][ig]=10*los_aero->q[ip][ig]*los_aero->p[ip]
+	/(GSL_CONST_MKSA_BOLTZMANN*los_aero->t[ip])*los_aero->ds[ip];
 
     /* Get aerosol/cloud layer id and factor */
-    los_aero.aeroi[ip] = -999;
-    los_aero.aerofac[ip] = 0.;
-    if ( (los_aero.z[ip-1] < altimax || los_aero.z[ip] < altimax) &&
-	 (los_aero.z[ip-1] > altimin || los_aero.z[ip] > altimin) ) { 
+    los_aero->aeroi[ip] = -999;
+    los_aero->aerofac[ip] = 0.;
+    if ( (los_aero->z[ip-1] < altimax || los_aero->z[ip] < altimax) &&
+	 (los_aero->z[ip-1] > altimin || los_aero->z[ip] > altimin) ) { 
       for (il=0; il<aero->nl;il++){
         /* Aerosol info within layer centre */
-	if (los_aero.z[ip] <= aero->top[il] && 
-	    los_aero.z[ip] >= aero->bottom[il]){
-	  los_aero.aeroi[ip] = il;
-	  los_aero.aerofac[ip] = 1.;	  
+	if (los_aero->z[ip] <= aero->top[il] && 
+	    los_aero->z[ip] >= aero->bottom[il]){
+	  los_aero->aeroi[ip] = il;
+	  los_aero->aerofac[ip] = 1.;	  
 	}
 	/* Aerosol info in transition region */
 	if (aero->trans[il] > ctl->transs &&
-	    los_aero.z[ip] <= (aero->top[il] + aero->trans[il]) &&
-	    los_aero.z[ip] > aero->top[il]){
-	  los_aero.aeroi[ip] = il;
-	  los_aero.aerofac[ip] = (aero->top[il] + aero->trans[il] - los_aero.z[ip])/
+	    los_aero->z[ip] <= (aero->top[il] + aero->trans[il]) &&
+	    los_aero->z[ip] > aero->top[il]){
+	  los_aero->aeroi[ip] = il;
+	  los_aero->aerofac[ip] = (aero->top[il] + aero->trans[il] - los_aero->z[ip])/
 	    aero->trans[il];
 	}
 	if (aero->trans[il] > ctl->transs &&
-	    los_aero.z[ip] < aero->bottom[il] &&
-	    los_aero.z[ip] >= (aero->bottom[il] - aero->trans[il])){
-	  los_aero.aeroi[ip] = il;
-	  los_aero.aerofac[ip] = fabs(aero->bottom[il]-aero->trans[il]-los_aero.z[ip])/
+	    los_aero->z[ip] < aero->bottom[il] &&
+	    los_aero->z[ip] >= (aero->bottom[il] - aero->trans[il])){
+	  los_aero->aeroi[ip] = il;
+	  los_aero->aerofac[ip] = fabs(aero->bottom[il]-aero->trans[il]-los_aero->z[ip])/
 	    aero->trans[il];
 	}
       }
@@ -337,7 +347,12 @@ void add_aerosol_layers(ctl_t *ctl,
   }
 
   /* Copy los */
-  *los = los_aero;
+  /*   *los = *los_aero; */
+  s=sizeof(los_t);
+  memcpy(los, los_aero, s);
+   
+  /* Free help los... */
+  free(los_aero);
 }
 
 /*****************************************************************************/

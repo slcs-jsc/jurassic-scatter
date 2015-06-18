@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <mpi.h>
 
 /* ------------------------------------------------------------
    Macros...
@@ -145,13 +146,13 @@
 #define NWMAX 5
 
 /* Maximum number of radiance channels. */
-#define NDMAX 202
+#define NDMAX 130
 
 /* Maximum number of emitters. */
 #define NGMAX 15
 
 /* Maximum number of LOS points. */
-#define NLOS 10000
+#define NLOS 5000
 
 /* Maximum number of atmospheric data points. */
 #define NPMAX 1000

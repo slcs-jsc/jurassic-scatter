@@ -33,11 +33,12 @@ void formod(ctl_t *ctl,
 #ifdef _OPENMP
 #pragma omp parallel for schedule(dynamic)
 #endif
-  
+
   /* Do remaining ray paths in parallel... */
-  for(ir=1; ir<obs->nr; ir++)
+  for(ir=1; ir<obs->nr; ir++){
     formod_pencil(ctl, atm, obs, aero, ctl->sca_mult, ir);
-  
+  }
+
   /* Apply field-of-view convolution... */
   formod_fov(ctl, obs);
   
@@ -174,8 +175,6 @@ void formod_pencil(ctl_t *ctl,
   double beta_ctm[NDMAX], beta_ext_tot, dx[3], eps, src_all, src_planck[NDMAX],
     src_sca[NDMAX], tau_path[NGMAX][NDMAX], tau_gas[NDMAX], x[3], x0[3], x1[3];
   
-  /*eps_sca,*/
-
   int i, id, ip, ip0, ip1;
   
   /* Read tables... */
@@ -557,6 +556,7 @@ void read_tbl(ctl_t *ctl,
 	/* Try to open file... */
 	sprintf(filename, "%s_%.4f_%s.tab",
 		ctl->tblbase, ctl->nu[id], ctl->emitter[ig]);
+
 	if(!(in=fopen(filename, "r"))) {
 	  printf("Missing emissivity table: %s\n", filename);
 	  continue;
@@ -636,7 +636,7 @@ void srcfunc_planck(ctl_t *ctl,
     tmin=100, tmax=400, temp[1201];
   
   static int i, init=0, n, nplanck=1201;
-  
+
   char filename[LEN];
   
   int id, it;
