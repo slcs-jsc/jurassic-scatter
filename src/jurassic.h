@@ -167,7 +167,7 @@
 #define NFOV 5
 
 /* Maximum number of pressure levels in emissivity tables. */
-#define TBLNPMAX 40
+#define TBLNPMAX 50
 
 /* Maximum number of source function temperature levels. */
 #define TBLNSMAX 1201

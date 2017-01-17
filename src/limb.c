@@ -16,7 +16,7 @@ int main(int argc, char *argv[]) {
   
   static obs_t obs;
   
-  double dz, obsz, z, zmax, zmin, altis[30];
+  double dz, obsz, z, zmax, zmin, altis[NRMAX];
   
   char altfile[LEN];
   
