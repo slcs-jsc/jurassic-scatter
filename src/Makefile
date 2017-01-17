@@ -39,13 +39,13 @@ CFLAGS += -fopenmp
 endif
 
 # -----------------------------------------------------------------------------
-# Load/unlaod modules for JUROPA
+# Load/unlaod modules for JURECA
 # -----------------------------------------------------------------------------
 #module purge
-#module load intel/12.0.4    #11.1.072 
-#module load gsl/1.15        #1.13/1.14
-#module load netcdf/4.3.2n
-#module load parastation/mpi2-intel-5.0.26-1
+#module load Intel/2017.0.098-GCC-5.4.0 #GCC compiler
+#module load ParaStationMPI/5.1.5-1
+#module load GSL/2.2.1
+#module load netCDF/4.4.1
 
 # -----------------------------------------------------------------------------
 # Set flags for INTEL compiler... (JUROPA)
