@@ -353,9 +353,8 @@ void get_opt_prop(ctl_t *ctl,
 	opt_prop_mie_log(ctl, aeroin, count, mbeta_e, mbeta_s, mp);
       } 
       else if(strcasecmp(aeroin->type[count], "Ext")==0){ 
-	printf("Using external optical properties database: %s\n", aeroin->filepath[count]);
-	/* opt_prop_external(ctl, aeroin, count, mbeta_e, mbeta_s, mp); */
-   	ERRMSG("Implement me!"); 
+	/* Get optical properties from external data base. Selects properties from closest wavenumber in data base file. */
+	opt_prop_external(ctl, aeroin, count, mbeta_e, mbeta_s, mp);
       } else if(strcasecmp(aeroin->type[count], "Const")==0){ 
     	printf("Using constant extinction [1/km]: %g\n", aeroin->nn[count]);
     	ERRMSG("Implement me!");
@@ -468,6 +467,78 @@ void opt_prop_mie_log(ctl_t *ctl,
   for(id=0; id<ctl->nd; id++){
     for (jj=0; jj<NTHETA; ++jj)
       phase[id][jj] /= beta_sca[id];
+  }
+}
+
+/*****************************************************************************/
+
+void opt_prop_external(ctl_t *ctl,
+		       aero_i *aeroin,
+		       int count,
+		       double *beta_ext,
+		       double *beta_sca,
+		       double phase[NDMAX][NTHETA]){
+
+  FILE *in;
+  
+  char line[LEN], *tok; 
+
+  static int init=0;
+
+  static double nu[REFMAX], n_ext[REFMAX], n_sca[REFMAX], n_phase[REFMAX][NTHETA];
+
+  int npts=0, ia, id, im;
+
+  /* evtl. später Interpolation zw. Wellenlängen als Option einbauen */
+
+  /* Read optical properties and find closest match to each wavenumber */
+  if(aeroin->nn[count]==0) {
+  
+    /* Check if previous mode has the same optical properties */
+    if(count==0 || strcmp(aeroin->filepath[count], aeroin->filepath[count-1])!=0) {
+      
+      /* Check for file... */
+      printf("Read non-spherical optical properties: %s\n", aeroin->filepath[count]);
+      if(!(in=fopen(aeroin->filepath[count], "r")))
+	ERRMSG("Cannot open file!");
+      
+      /* Read data... */
+      while(fgets(line, LEN, in)) {
+    	
+	TOK(line, tok, "%lg", nu[npts]);  
+	TOK(NULL, tok, "%lg", n_ext[npts]);
+	TOK(NULL, tok, "%lg", n_sca[npts]);
+	for(ia=0; ia<NTHETA; ia++)
+	  TOK(NULL, tok, "%lg", n_phase[npts][ia]);
+	
+	if((++npts)>REFMAX)
+	  ERRMSG("Too many data points!");
+      }
+      
+      /* Close file... */
+      fclose(in);
+      
+      /* Check number of points... */
+      if(npts<1)
+	ERRMSG("Could not read any data!");
+    }
+
+    /* Find closest match in wavenumber for each spectral point */
+    for(id=0; id<ctl->nd; id++){
+      im=locate(nu, npts, ctl->nu[id]);
+      if(im != npts && abs(nu[im] - ctl->nu[id]) > abs(nu[im+1] - ctl->nu[id]))
+	im=im+1;
+      
+      beta_ext[id] = n_ext[im];
+      beta_sca[id] = n_sca[im];
+      for (ia=0; ia<NTHETA; ++ia)
+      	phase[id][ia] = n_phase[im][ia];
+    }
+  }
+
+  /* Read optical properties and interpolate to wavenumber */
+  if(aeroin->nn[count]==1) {
+    ERRMSG("Implement me!");
   }
 }
 
