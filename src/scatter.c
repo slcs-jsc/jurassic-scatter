@@ -596,7 +596,9 @@ void read_aero(const char *dirname,
 
   /* Check consistency */
   if(ctl->sca_n != aeroin->nm)
-    ERRMSG("Number of scattering models in control file and aerosol file does not match.");
+    ERRMSG("Number of scattering models in control file and aerosol file does not match."); 
+  /* printf("\nWARNING (%s, %s, l%d): %s\n\n",				\ */
+  /* 	 __FILE__, __FUNCTION__, __LINE__, "Number of scattering models in control file and aerosol file does not match."); */
 
 }
 

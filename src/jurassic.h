@@ -179,7 +179,7 @@
 #define TBLNUMAX 320
 
 /* Maximum number of scattering models. */
-#define SCAMOD 15
+#define SCAMOD 30
 
 /* Maximum number of aerosol/cloud layers */
 #define NLMAX 10
