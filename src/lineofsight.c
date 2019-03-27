@@ -12,7 +12,7 @@ void raytrace(ctl_t *ctl,
   double cosa, d, dmax, dmin=0, ds, ex0[3], ex1[3], h=0.02, k[NWMAX],
     lat, lon, n, naux, ng[3], norm, p, q[NGMAX], 
     t, x[3], xh[3], xobs[3], xvp[3], z=1e99, zmax, zmin, zrefrac=60;
-  /*zrefrac=25*/
+  /*zrefrac=25 for CRISTA-NF*/
   int i, ig, ip, iw, stop=0;
 
   /* Initialize... */
@@ -84,12 +84,12 @@ void raytrace(ctl_t *ctl,
     cart2geo(x, &z, &lon, &lat);
     
     /* Check if LOS hits the ground or has left atmosphere and save last los point. */
-    if(z<zmin || z>zmax) {
-      stop=(z<zmin ? 2 : 1);
+    if(z<zmin+0.001 || z>zmax-0.001) {
+      stop=(z<zmin+0.001 ? 2 : 1);
       los->z[los->np] = z;
       los->lon[los->np]=lon;
       los->lat[los->np]=lat;
-      intersection_point(ctl, atm, (z<zmin ? &zmin : &zmax), los, los->np, los, los->np);
+      intersection_point(ctl, atm, (z<zmin+0.001 ? &zmin : &zmax), los, los->np, los, los->np);
       los->ds[los->np]=0.;
     }
     
@@ -197,7 +197,8 @@ void add_aerosol_layers(ctl_t *ctl,
 
   los_t *los_aero;
 
-  double alti[4*NLMAX], altimax, altimin, x1[3], x2[3], x3[3], tt=0.; 
+  double alti[4*NLMAX], altimax, altimin, x1[3], x2[3], x3[3], tt=0., epsilon=0.001; 
+  /* deltatop=10., deltabot=10., */
 
   int il, ig, iw, jl=0, ip, it;
 
@@ -208,25 +209,25 @@ void add_aerosol_layers(ctl_t *ctl,
 
   /* Create altitudes to sample aerosol edges */
   for (il=0; il<aero->nl;il++){
-    alti[jl] = aero->top[il] + 0.005;
-    alti[jl+1] = aero->top[il] - 0.005;
-    alti[jl+2] = aero->bottom[il] + 0.005;
-    alti[jl+3] = aero->bottom[il] - 0.005;
+    alti[jl] = aero->top[il] + epsilon;
+    alti[jl+1] = aero->top[il] - epsilon;
+    alti[jl+2] = aero->bottom[il] + epsilon;
+    alti[jl+3] = aero->bottom[il] - epsilon;
     jl = jl+4;
 
     /* Create altitudes to sample transition layers */
     if (aero->trans[il] > ctl->transs) {
       tt = aero->trans[il] / ctl->transs;
       
-      alti[jl] = aero->top[il] + aero->trans[il] + 0.005;
-      alti[jl+1] = aero->top[il] + aero->trans[il] - 0.005;
-      alti[jl+2] = aero->bottom[il] - aero->trans[il] + 0.005;
-      alti[jl+3] = aero->bottom[il] - aero->trans[il] - 0.005;
+      alti[jl] = aero->top[il] + aero->trans[il] + epsilon;
+      alti[jl+1] = aero->top[il] + aero->trans[il] - epsilon;
+      alti[jl+2] = aero->bottom[il] - aero->trans[il] + epsilon;
+      alti[jl+3] = aero->bottom[il] - aero->trans[il] - epsilon;
       jl = jl+4;
       for (it=1; it<(int)tt; it++){
-	alti[jl] = aero->top[il] + aero->trans[il] - 0.005 - it*ctl->transs;
+	alti[jl] = aero->top[il] + aero->trans[il] - epsilon - it*ctl->transs;
 	jl++;
-	alti[jl] = aero->bottom[il] - aero->trans[il] + 0.005 + it*ctl->transs;
+	alti[jl] = aero->bottom[il] - aero->trans[il] + epsilon + it*ctl->transs;
 	jl++;
       }
     }  
@@ -275,6 +276,20 @@ void add_aerosol_layers(ctl_t *ctl,
       }
     }
 
+    /* /\* check if current altitude is closer than 2m *\/ */
+    /* /\* to any cloud top or bottom *\/ */
+    /* deltatop = 10; */
+    /* deltabot = 10; */
+    /* for (il=0; il<aero->nl;il++){ */
+    /*   deltatop = fabs(los->z[ip] - aero->top[il]); */
+    /*   deltabot = fabs(los->z[ip] - aero->bottom[il]); */
+    /*   if ( deltatop < epsilon*2. || deltabot < epsilon*2. ){ */
+    /* 	continue; */
+    /*   } */
+    /* } */
+    
+    /* only copy old los points, if they are outside top||bottom +-2m */ 
+    /* if ( deltatop >= epsilon*2. && deltabot >= epsilon*2. ) {  */
     /* copy old los points */
     los_aero->z[los_aero->np] = los->z[ip];
     los_aero->lat[los_aero->np] = los->lat[ip];
@@ -285,10 +300,11 @@ void add_aerosol_layers(ctl_t *ctl,
       los_aero->q[los_aero->np][ig] = los->q[ip][ig];
     for(iw=0; iw<ctl->nw; iw++)
       los_aero->k[los_aero->np][iw] = los->k[ip][iw];
-
+    
     /* Increment and check number of new LOS points */
     if((los_aero->np++)>NLOS)
       ERRMSG("Too many LOS points!");
+    /* } */
   }
 
   /* Compute segment length following trapezoidal rule */
