@@ -85,7 +85,13 @@ void read_ctl(int argc,
     ctl->retk_zmin[iw]=scan_ctl(argc, argv, "RETK_ZMIN", iw, "-999", NULL);
     ctl->retk_zmax[iw]=scan_ctl(argc, argv, "RETK_ZMAX", iw, "-999", NULL);
   }
-  
+  ctl->retnn=(int)scan_ctl(argc, argv, "RETNN", -1, "0", NULL);
+  ctl->retrr=(int)scan_ctl(argc, argv, "RETRR", -1, "0", NULL);
+  ctl->retss=(int)scan_ctl(argc, argv, "RETSS", -1, "0", NULL);
+
+  ctl->retnn_zmin=(int)scan_ctl(argc, argv, "RETNN_ZMIN", -1, "-999", NULL);
+  ctl->retnn_zmax=(int)scan_ctl(argc, argv, "RETNN_ZMAX", -1, "-999", NULL);
+
   /* Output flags... */
   ctl->write_bbt=(int)scan_ctl(argc, argv, "WRITE_BBT", -1, "0", NULL);
   ctl->write_matrix=(int)scan_ctl(argc, argv, "WRITE_MATRIX", -1, "0", NULL);

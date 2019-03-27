@@ -13,6 +13,7 @@
 /* Compose state vector or parameter vector. */
 size_t atm2x(ctl_t *ctl,
 	     atm_t *atm,
+	     aero_t *aero,
 	     gsl_vector *x,
 	     int *iqa,
 	     int *ipa);

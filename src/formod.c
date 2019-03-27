@@ -28,15 +28,22 @@ int main(int argc, char *argv[]) {
   FILE *in;
   
   char dirlist[LEN], wrkdir[LEN], task[LEN], aerofile[LEN];
-  
-  /* ###################################################################### */
-  int ierr, myrank=0, numprocs=1, nfiles=-1;
-  /* ###################################################################### */
+
+  double start, end, duration, global;
+
+  /* ###################################################################### */  
+  int myrank=0, numprocs=1, nfiles=-1;
+
+#ifdef MPI /* MPI_VERSION */
+  int ierr; 
 
   /* Initialize MPI */
   ierr = MPI_Init(&argc, &argv);
+  start = MPI_Wtime();
   ierr = MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
   ierr = MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
+  /* ###################################################################### */
+#endif
 
   /* Check arguments... */
   if(argc<5)
@@ -81,7 +88,15 @@ int main(int argc, char *argv[]) {
     /* Close dirlist... */
     fclose(in);
   }
+#ifdef MPI /* MPI_VERSION */
+  end = MPI_Wtime();
+  duration = end - start;
+  MPI_Reduce(&duration,&global,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
+  if(myrank == 0) {
+    printf("Global runtime is %f seconds \n",global);
+  }
   ierr = MPI_Finalize();
+#endif
   return EXIT_SUCCESS;
 }
 
@@ -99,8 +114,6 @@ void call_formod(ctl_t *ctl,
   
   static obs_t obs;
 
-  static aero_i aeroin;
-  
   static aero_t aero;
   
   char filename[LEN];
@@ -115,9 +128,9 @@ void call_formod(ctl_t *ctl,
   
   /* Read aerosol and cloud data */
   if(aerofile[0]!='-' && ctl->sca_n>0) {
-    read_aero(wrkdir, aerofile, ctl, &aeroin);
+    read_aero(wrkdir, aerofile, ctl, &aero);
     /* Get aerosol/cloud optical properties */
-    get_opt_prop(ctl, &aeroin, &aero);
+    get_opt_prop(ctl, &aero);
   } 
   else if (aerofile[0]=='-' && ctl->sca_n>0) {
     ERRMSG("Please give aerosol file name or set SCA_N=0 for clear air simulation!");

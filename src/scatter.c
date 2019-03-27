@@ -233,6 +233,43 @@ void bhmie(double x,
 }
 
 /*****************************************************************************/
+void copy_aero(ctl_t *ctl,
+	       aero_t *aero_dest,
+	       aero_t *aero_src,
+	       int init) {
+
+  int id, ia, im, il;
+  
+  /* Copy data... */
+  memcpy(aero_dest, aero_src, sizeof(aero_t));
+    
+  /* Initialize... */
+  if(init){
+    for(im=0; im<aero_dest->nm; im++) {
+      aero_dest->top_mod[im]=0;
+      aero_dest->bottom_mod[im]=0;
+      aero_dest->trans_mod[im]=0;
+      aero_dest->nn[im]=0;
+      aero_dest->rr[im]=0;
+      aero_dest->ss[im]=1;
+    }
+    for(il=0; il<aero_dest->nl; il++) {
+      aero_dest->nmod[il]=0;
+      aero_dest->top[il]=0;
+      aero_dest->bottom[il]=0;
+      aero_dest->trans[il]=0;
+      for(id=0; id<ctl->nd; id++){
+	aero_dest->beta_e[il][id]=0;
+	aero_dest->beta_s[il][id]=0;
+	aero_dest->beta_a[il][id]=0;
+	for(ia=0; ia<NTHETA; ia++)
+	  aero_dest->p[il][id][ia]=0;
+      }
+    }
+  }
+}
+
+/*****************************************************************************/
 
 void gauher(double *x,
 	    double *w){
@@ -290,7 +327,6 @@ void gauher(double *x,
 
 /*****************************************************************************/
 void get_opt_prop(ctl_t *ctl,
-		  aero_i *aeroin,
 		  aero_t *aero){
 
   int nl=1, nm=1, count=0;
@@ -299,32 +335,32 @@ void get_opt_prop(ctl_t *ctl,
  
   /* check input data */
   /* ToDo: improve check and sort data */
-  if(aeroin->top[0]<=aeroin->bottom[0])
+  if(aero->top_mod[0]<=aero->bottom_mod[0])
     ERRMSG("Aerosol top altitude is smaller than bottom altitude. Please check aero.tab.");
 
-  aero->top[0] = aeroin->top[0];
-  aero->bottom[0] = aeroin->bottom[0];
-  aero->trans[0] = aeroin->trans[0];
+  aero->top[0] = aero->top_mod[0];
+  aero->bottom[0] = aero->bottom_mod[0];
+  aero->trans[0] = aero->trans_mod[0];
   
-  for (ii=1; ii<aeroin->nm; ii++){
-    if(aeroin->top[ii]>aeroin->top[ii-1] ||
-       aeroin->top[ii]<=aeroin->bottom[ii] ||
-       aeroin->bottom[ii]>aeroin->bottom[ii-1])
+  for (ii=1; ii<aero->nm; ii++){
+    if(aero->top_mod[ii]>aero->top_mod[ii-1] ||
+       aero->top_mod[ii]<=aero->bottom_mod[ii] ||
+       aero->bottom_mod[ii]>aero->bottom_mod[ii-1])
       ERRMSG("Aerosol/Cloud altitudes and/or transition layers are wrong. Please check aero.tab.");
     /* Identify number of aerosol/cloud layers and set top, */
     /* bottom and transition layer */
     /* Check if input is already sorted list from top to bottom; */
-    if(aeroin->top[ii]!=aeroin->top[ii-1]){
-      aero->top[nl] = aeroin->top[ii];
-      aero->bottom[nl] = aeroin->bottom[ii];
-      aero->trans[nl] = aeroin->trans[ii];
-      aero->nm[nl-1] = nm;
+    if(aero->top_mod[ii]!=aero->top_mod[ii-1]){
+      aero->top[nl] = aero->top_mod[ii];
+      aero->bottom[nl] = aero->bottom_mod[ii];
+      aero->trans[nl] = aero->trans_mod[ii];
+      aero->nmod[nl-1] = nm;
       nl++;
       nm=0;
     }
     nm++;
   }
-  aero->nm[nl-1] = nm;
+  aero->nmod[nl-1] = nm;
   aero->nl = nl;
   
   /* Get optical properties for each layer. */
@@ -345,18 +381,18 @@ void get_opt_prop(ctl_t *ctl,
     }
 
     /* Get optical properties for each mode. */
-    for (jj=0; jj<aero->nm[ii]; jj++){
+    for (jj=0; jj<aero->nmod[ii]; jj++){
 
-      if(strcasecmp(aeroin->type[count], "MIE")==0){
+      if(strcasecmp(aero->type[count], "MIE")==0){
     	/* Get optical properties for log-normal mode using Mie theory. */ 
 	/* Gauss-Hermite integration */
-	opt_prop_mie_log(ctl, aeroin, count, mbeta_e, mbeta_s, mp);
+	opt_prop_mie_log(ctl, aero, count, mbeta_e, mbeta_s, mp);
       } 
-      else if(strcasecmp(aeroin->type[count], "Ext")==0){ 
+      else if(strcasecmp(aero->type[count], "Ext")==0){ 
 	/* Get optical properties from external data base. Selects properties from closest wavenumber in data base file. */
-	opt_prop_external(ctl, aeroin, count, mbeta_e, mbeta_s, mp);
-      } else if(strcasecmp(aeroin->type[count], "Const")==0){ 
-    	printf("Using constant extinction [1/km]: %g\n", aeroin->nn[count]);
+	opt_prop_external(ctl, aero, count, mbeta_e, mbeta_s, mp);
+      } else if(strcasecmp(aero->type[count], "Const")==0){ 
+    	printf("Using constant extinction [1/km]: %g\n", aero->nn[count]);
     	ERRMSG("Implement me!");
       }
       else {
@@ -383,7 +419,7 @@ void get_opt_prop(ctl_t *ctl,
 /*****************************************************************************/
 
 void opt_prop_mie_log(ctl_t *ctl,
-		     aero_i *aeroin,
+		     aero_t *aero,
 		     int count,
 		     double *beta_ext,
 		     double *beta_sca,
@@ -404,11 +440,11 @@ void opt_prop_mie_log(ctl_t *ctl,
 
   /* Read and interpolate refractive indices... */
   /* Check if previous mode has the same refractive index */
-  if(count==0 || strcmp(aeroin->filepath[count], aeroin->filepath[count-1])!=0) { 
+  if(count==0 || strcmp(aero->filepath[count], aero->filepath[count-1])!=0) { 
     
     /* Read data... */
-    printf("Read refractive indices: %s\n", aeroin->filepath[count]);
-    if(!(in=fopen(aeroin->filepath[count], "r")))
+    printf("Read refractive indices: %s\n", aero->filepath[count]);
+    if(!(in=fopen(aero->filepath[count], "r")))
       ERRMSG("Cannot open file!");
     while(fgets(line, LEN, in))
       if(sscanf(line, "%lg %lg %lg", &nu[npts], &nr[npts], &ni[npts])==3)
@@ -425,7 +461,7 @@ void opt_prop_mie_log(ctl_t *ctl,
   } 
 
   /* Check log-normal parameters... */
-  if(aeroin->nn[count]<=0 || aeroin->rr[count]<=0 || aeroin->ss[count]<=1)
+  if(aero->nn[count]<=0 || aero->rr[count]<=0 || aero->ss[count]<=1)
     ERRMSG("The log-normal parameters are nonsense. ((?_?)) ");
     
   /* Integrate Mie parameters over log-normal mode */
@@ -436,11 +472,11 @@ void opt_prop_mie_log(ctl_t *ctl,
   }
 
   /* set coefficient */
-  K1 = aeroin->nn[count] * 1e-3 * sqrt(M_PI);
+  K1 = aero->nn[count] * 1e-3 * sqrt(M_PI);
 
   /* sum up Gaussian nodes */
   for (nn=0; nn<NRAD; ++nn) {
-    rad = exp(sqrt(2) * log(aeroin->ss[count]) * zs[nn] + log(aeroin->rr[count]));
+    rad = exp(sqrt(2) * log(aero->ss[count]) * zs[nn] + log(aero->rr[count]));
     if (rad >= rad_min && rad <= rad_max && K1 > 0.) {
  
      for(id=0; id<ctl->nd; id++){
@@ -473,7 +509,7 @@ void opt_prop_mie_log(ctl_t *ctl,
 /*****************************************************************************/
 
 void opt_prop_external(ctl_t *ctl,
-		       aero_i *aeroin,
+		       aero_t *aero,
 		       int count,
 		       double *beta_ext,
 		       double *beta_sca,
@@ -483,8 +519,6 @@ void opt_prop_external(ctl_t *ctl,
   
   char line[LEN], *tok; 
 
-  static int init=0;
-
   static double nu[REFMAX], n_ext[REFMAX], n_sca[REFMAX], n_phase[REFMAX][NTHETA];
 
   int npts=0, ia, id, im;
@@ -492,14 +526,14 @@ void opt_prop_external(ctl_t *ctl,
   /* evtl. später Interpolation zw. Wellenlängen als Option einbauen */
 
   /* Read optical properties and find closest match to each wavenumber */
-  if(aeroin->nn[count]==0) {
+  if(aero->nn[count]==0) {
   
     /* Check if previous mode has the same optical properties */
-    if(count==0 || strcmp(aeroin->filepath[count], aeroin->filepath[count-1])!=0) {
+    if(count==0 || strcmp(aero->filepath[count], aero->filepath[count-1])!=0) {
       
       /* Check for file... */
-      printf("Read non-spherical optical properties: %s\n", aeroin->filepath[count]);
-      if(!(in=fopen(aeroin->filepath[count], "r")))
+      printf("Read non-spherical optical properties: %s\n", aero->filepath[count]);
+      if(!(in=fopen(aero->filepath[count], "r")))
 	ERRMSG("Cannot open file!");
       
       /* Read data... */
@@ -526,7 +560,8 @@ void opt_prop_external(ctl_t *ctl,
     /* Find closest match in wavenumber for each spectral point */
     for(id=0; id<ctl->nd; id++){
       im=locate(nu, npts, ctl->nu[id]);
-      if(im != npts && abs(nu[im] - ctl->nu[id]) > abs(nu[im+1] - ctl->nu[id]))
+      if(im != npts && fabs(nu[im] - ctl->nu[id]) > fabs(nu[im+1] - ctl->nu[id]))
+      /* if(im != npts && (nu[im] - ctl->nu[id]) > (nu[im+1] - ctl->nu[id])) */
 	im=im+1;
       
       beta_ext[id] = n_ext[im];
@@ -537,7 +572,7 @@ void opt_prop_external(ctl_t *ctl,
   }
 
   /* Read optical properties and interpolate to wavenumber */
-  if(aeroin->nn[count]==1) {
+  if(aero->nn[count]==1) {
     ERRMSG("Implement me!");
   }
 }
@@ -547,14 +582,14 @@ void opt_prop_external(ctl_t *ctl,
 void read_aero(const char *dirname,
 	       const char *filename,
 	       ctl_t *ctl,
-	       aero_i *aeroin){
+	       aero_t *aero){
 
   FILE *in;
   
   char file[LEN], line[LEN], *tok;
   
   /* Init... */
-  aeroin->nm=0;
+  aero->nm=0;
   
   /* Set filename... */
   if(dirname!=NULL)
@@ -573,17 +608,17 @@ void read_aero(const char *dirname,
   while(fgets(line, LEN, in)) {
     
     /* Read data... */
-    TOK(line, tok, "%lg", aeroin->top[aeroin->nm]);
-    TOK(NULL, tok, "%lg", aeroin->bottom[aeroin->nm]);
-    TOK(NULL, tok, "%lg", aeroin->trans[aeroin->nm]);
-    TOK(NULL, tok, "%s",  aeroin->type[aeroin->nm][0]);
-    TOK(NULL, tok, "%s",  aeroin->filepath[aeroin->nm][0]); 
-    TOK(NULL, tok, "%lg", aeroin->nn[aeroin->nm]); 
-    TOK(NULL, tok, "%lg", aeroin->rr[aeroin->nm]);
-    TOK(NULL, tok, "%lg", aeroin->ss[aeroin->nm]);
+    TOK(line, tok, "%lg", aero->top_mod[aero->nm]);
+    TOK(NULL, tok, "%lg", aero->bottom_mod[aero->nm]);
+    TOK(NULL, tok, "%lg", aero->trans_mod[aero->nm]);
+    TOK(NULL, tok, "%s",  aero->type[aero->nm][0]);
+    TOK(NULL, tok, "%s",  aero->filepath[aero->nm][0]); 
+    TOK(NULL, tok, "%lg", aero->nn[aero->nm]); 
+    TOK(NULL, tok, "%lg", aero->rr[aero->nm]);
+    TOK(NULL, tok, "%lg", aero->ss[aero->nm]);
     
     /* Increment counter... */
-    if((++aeroin->nm)>SCAMOD)
+    if((++aero->nm)>SCAMOD)
       ERRMSG("Too many aerosol models!");
   }
   
@@ -591,11 +626,11 @@ void read_aero(const char *dirname,
   fclose(in);
   
   /* Check number of points... */
-  if(aeroin->nm<1)
+  if(aero->nm<1)
     ERRMSG("Could not read any data!");
 
   /* Check consistency */
-  if(ctl->sca_n != aeroin->nm)
+  if(ctl->sca_n != aero->nm)
     ERRMSG("Number of scattering models in control file and aerosol file does not match."); 
   /* printf("\nWARNING (%s, %s, l%d): %s\n\n",				\ */
   /* 	 __FILE__, __FUNCTION__, __LINE__, "Number of scattering models in control file and aerosol file does not match."); */
@@ -711,7 +746,7 @@ void srcfunc_sca_1d(ctl_t *ctl,
     src_sca[id]=0;
     wsum[id]=0;
   }
-  
+    
   /* Loop over phase function angles... */
   for(itheta=0; itheta<ntheta2; itheta++) {
     
@@ -1001,3 +1036,56 @@ void suncoord(double sec,
   /* Solar zenith angle (90 deg - elevation) [deg]... */
   *sza=acos(sin(lat)*sin(dec)+cos(lat)*cos(dec)*cos(h))*180/M_PI;
 }
+
+/*****************************************************************************/
+
+void write_aero(const char *dirname,
+		const char *filename,
+		aero_t *aero) {
+  
+  FILE *out;
+  
+  char file[LEN];
+  
+  int im;
+  
+  /* Set filename... */
+  if(dirname!=NULL)
+    sprintf(file, "%s/%s", dirname, filename);
+  else
+    sprintf(file, "%s", filename);
+  
+  /* Write info... */
+  printf("Write particle data: %s\n", file);
+  
+  /* Create file... */
+  if(!(out=fopen(file, "w")))
+    ERRMSG("Cannot create file!");
+  
+  /* Write header... */
+  fprintf(out,
+	  "# $1 = aerosol layer top altitude [km]\n"
+	  "# $2 = aerosol layer bottom altitude [km]\n"
+	  "# $3 = transition layer thickness [km]\n"
+	  "# $4 = source for optical properties\n"
+	  "# $5 = refractive index file\n"
+	  "# $6 = particle concentration of log-normal mode [cm-3]\n"
+	  "# $7 = median radius of log-normal mode [mum]\n"
+	  "# $8 = width of log-normal mode\n");
+  
+  /* Write data... */
+  for(im=0; im<aero->nm; im++) {
+    if(im==0)
+      fprintf(out, "\n");
+    fprintf(out, "%g %g %g %s %s %g %g %g", aero->top_mod[im], 
+	    aero->bottom_mod[im], aero->trans_mod[im], 
+	    aero->type[im], aero->filepath[im], 
+	    aero->nn[im], aero->rr[im], aero->ss[im]);
+    fprintf(out, "\n");
+  }
+  
+  /* Close file... */
+  fclose(out);
+}
+
+/*****************************************************************************/

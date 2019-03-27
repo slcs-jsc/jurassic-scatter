@@ -27,6 +27,11 @@ void formod(ctl_t *ctl,
   /* Hydrostatic equilibrium... */
   hydrostatic(ctl, atm);
   
+  /* Particles: Calculate optical properties in retrieval */
+  if(ctl->retnn || ctl->retrr || ctl->retss) {
+    get_opt_prop(ctl, aero);
+  }
+
   /* Do first ray path sequential (to initialize model)... */
   formod_pencil(ctl, atm, obs, aero, ctl->sca_mult, 0);
   
@@ -123,7 +128,7 @@ void formod_fov(ctl_t *ctl,
     nz=0;
     for(ir2=GSL_MAX(ir-NFOV, 0); ir2<GSL_MIN(ir+1+NFOV, obs->nr); ir2++)
       if(obs->time[ir2]==obs->time[ir]) {
-	z[nz]=obs2.vpz[ir2];
+	z[nz]=obs2.tpz[ir2];
 	for(id=0; id<ctl->nd; id++) {
 	  rad[id][nz]=obs2.rad[id][ir2];
 	  tau[id][nz]=obs2.tau[id][ir2];
@@ -140,13 +145,15 @@ void formod_fov(ctl_t *ctl,
       obs->tau[id][ir]=0;
     }
     for(i=0; i<n; i++) {
-      zfov=obs->vpz[ir]+dz[i];
+      zfov=obs->tpz[ir]+dz[i];
       idx=locate(z, nz, zfov);
       for(id=0; id<ctl->nd; id++) {
         obs->rad[id][ir]+=w[i]
-          *LIN(z[idx], rad[id][idx], z[idx+1], rad[id][idx+1], zfov);
+          *LIN(z[idx], rad[id][idx], 
+	       z[idx+1], rad[id][idx+1], zfov);
         obs->tau[id][ir]+=w[i]
-          *LIN(z[idx], tau[id][idx], z[idx+1], tau[id][idx+1], zfov);
+          *LIN(z[idx], tau[id][idx], 
+	       z[idx+1], tau[id][idx+1], zfov);
       }
       wsum+=w[i];
     }
@@ -223,7 +230,7 @@ void formod_pencil(ctl_t *ctl,
 	dx[i]=x1[i]-x0[i];
 
       srcfunc_sca(ctl,atm,aero,obs->time[ir],x,dx,los->aeroi[ip],src_sca,scattering);
-      
+
       /* Loop over channels... */
       for(id=0; id<ctl->nd; id++)
 	if(tau_gas[id]>0) {
@@ -280,7 +287,7 @@ void formod_pencil(ctl_t *ctl,
 	}
     }
   }
-  
+
   /* Add surface... */
   if(los->tsurf>0) {
     srcfunc_planck(ctl, los->tsurf, src_planck);

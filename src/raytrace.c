@@ -11,9 +11,7 @@ int main(int argc, char *argv[]) {
   static los_t los;
   
   static obs_t obs;
-
-  static aero_i aeroin;
-
+  
   static aero_t aero;
   
   FILE *out;
@@ -40,9 +38,9 @@ int main(int argc, char *argv[]) {
   
   /* Read aerosol and cloud data */
   if(aerofile[0]!='-' && ctl.sca_n>0) {
-    read_aero(NULL, aerofile, &ctl, &aeroin);
+    read_aero(NULL, aerofile, &ctl, &aero);
     /* Get aerosol/cloud optical properties */
-    get_opt_prop(&ctl, &aeroin, &aero);
+    get_opt_prop(&ctl, &aero);
   } else if (aerofile[0]=='-' && ctl.sca_n>0) {
     ERRMSG("Please give aerosol file name or set SCA_N=0 for clear air simulation!");
   }
@@ -112,8 +110,6 @@ int main(int argc, char *argv[]) {
 
     printf("Wrote output to %s \n",filename);
   }
-
-
 
   return EXIT_SUCCESS;
 }

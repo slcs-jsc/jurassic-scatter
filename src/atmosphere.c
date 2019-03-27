@@ -4,6 +4,7 @@
 
 size_t atm2x(ctl_t *ctl,
 	     atm_t *atm,
+	     aero_t *aero,
 	     gsl_vector *x,
 	     int *iqa,
 	     int *ipa) {
@@ -29,6 +30,39 @@ size_t atm2x(ctl_t *ctl,
   for(iw=0; iw<ctl->nw; iw++)
     atm2x_help(atm, ctl->retk_zmin[iw], ctl->retk_zmax[iw],
 	       atm->k[iw], IDXK(iw), x, iqa, ipa, &n);
+ 
+  /* Add particle concentration... */
+  if(ctl->retnn) {
+    if(x!=NULL)
+      gsl_vector_set(x, n, aero->nn[0]);
+      if(iqa!=NULL)
+	iqa[n]=IDXNN;
+      if(ipa!=NULL)
+	ipa[n]=-1;
+      (n)++;
+  }
+
+  /* Add particle size... */
+  if(ctl->retrr) {
+    if(x!=NULL)
+      gsl_vector_set(x, n, aero->rr[0]);
+      if(iqa!=NULL)
+	iqa[n]=IDXRR;
+      if(ipa!=NULL)
+	ipa[n]=-1;
+      (n)++;
+  }
+
+  /* Add particle size distribution width... */
+  if(ctl->retss) {
+    if(x!=NULL)
+      gsl_vector_set(x, n, aero->ss[0]);
+      if(iqa!=NULL)
+	iqa[n]=IDXSS;
+      if(ipa!=NULL)
+	ipa[n]=-1;
+      (n)++;
+  }
   
   return n;
 }

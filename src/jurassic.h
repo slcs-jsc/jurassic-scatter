@@ -149,10 +149,10 @@
 #define NDMAX 130
 
 /* Maximum number of emitters. */
-#define NGMAX 15
+#define NGMAX 25
 
 /* Maximum number of LOS points. */
-#define NLOS 5000
+#define NLOS 10000
 
 /* Maximum number of atmospheric data points. */
 #define NPMAX 1000
@@ -164,7 +164,7 @@
 #define NSHAPE 10000
 
 /* Number of ray paths used for FOV calculations. */
-#define NFOV 5
+#define NFOV 50
 
 /* Maximum number of pressure levels in emissivity tables. */
 #define TBLNPMAX 50
@@ -208,6 +208,16 @@
 
 /* Extinction. */
 #define IDXK(iw) (2+ctl->ng+iw)
+
+/* Particle concentration. */
+#define IDXNN  (2+ctl->ng+ctl->nw+1)
+
+/* Particle size (radius). */
+#define IDXRR  (2+ctl->ng+ctl->nw+2)
+
+/* Particle size distribution width. */
+#define IDXSS  (2+ctl->ng+ctl->nw+3)
+
 
 /* ------------------------------------------------------------
    Global Structs...
@@ -308,7 +318,22 @@ typedef struct {
   
   /* Maximum altitude for extinction retrieval [km]. */
   double retk_zmax[NWMAX];
+
+  /* Minimum altitude for particle [km]. */
+  double retnn_zmin;
   
+  /* Maximum altitude for particle retrieval [km]. */
+  double retnn_zmax
+;
+  /* Retrieval of particle concentration (0=no, 1=yes) */
+  int retnn;
+
+  /* Retrieval of particle size (0=no, 1=yes) */
+  int retrr;
+
+  /* Retrieval of particle size distribution width (0=no, 1=yes) */
+  int retss;
+
   /* Use brightness temperature instead of radiance (0=no, 1=yes). */
   int write_bbt;
   
@@ -441,14 +466,45 @@ typedef struct {
 } tbl_t;
 /* ------------------------------------------------------------*/
 
-/* Aerosol and Cloud optical properties. */
+/* Aerosol and Cloud properties. */
 typedef struct { 
+  
+  /* Aerosol and cloud input parameters */
+
+  /* Number of aerosol/cloud models */
+  int nm;
+  
+  /* Model top altitude [km] */
+  double top_mod[SCAMOD];
+  
+  /* Model bottom altitude [km] */
+  double bottom_mod[SCAMOD];
+  
+  /* Model transition layer thickness [km] */
+  double trans_mod[SCAMOD];
+  
+  /* Optical properties source */
+  char type[SCAMOD][LEN];
+  
+  /* Refractive index file or optical properties file */
+  char filepath[SCAMOD][LEN];
+  
+  /* Number concentration [cm-3] or extinction coefficient [km-1] */
+  double nn[SCAMOD];
+  
+  /* Median radius of log-normal size distribution [mum] */
+  double rr[SCAMOD];
+  
+  /* Width of log-normal size distribution */
+  double ss[SCAMOD];
+  
+  /* Aerosol and cloud optical properties for radiative transfer */
 
   /* Number of aerosol/cloud layers */
   int nl;
 
   /* Number of modes per layer */
-  int nm[NLMAX];
+  int nmod[NLMAX];
 
   /* Layer top altitude [km] */
   double top[NLMAX];
@@ -472,40 +528,6 @@ typedef struct {
   double p[NLMAX][NDMAX][NTHETA];
 
  } aero_t;
-/* ------------------------------------------------------------*/
-
- /* Aerosol and cloud file input data. */
-  typedef struct{
-    
-    /* Number of aerosol/cloud models */
-    int nm;
-
-    /* Layer top altitude [km] */
-    double top[SCAMOD];
-    
-    /* Layer bottom altitude [km] */
-    double bottom[SCAMOD];
-    
-    /* Transition layer thickness [km] */
-    double trans[SCAMOD];
-    
-    /* Optical properties source */
-    char type[SCAMOD][LEN];
-
-    /* Refractive index file or optical properties file */
-    char filepath[SCAMOD][LEN];
-
-    /* Number concentration [cm-3] or extinction coefficient [km-1] */
-    double nn[SCAMOD];
-
-    /* Median radius of log-normal size distribution [mum] */
-    double rr[SCAMOD];
-    
-    /* Width of log-normal size distribution */
-    double ss[SCAMOD];
-    
-  } aero_i;
-/* ------------------------------------------------------------*/
 
 /* Atmospheric data. */
 typedef struct { 
@@ -541,5 +563,80 @@ typedef struct {
    int init;
 
  } atm_t;
+/* ------------------------------------------------------------*/
+
+/* Retrieval control parameters. */
+typedef struct {
+  
+  /* Working directory. */
+  char dir[LEN];
+  
+  /* Recomputation of kernel matrix (number of iterations). */
+  int kernel_recomp;
+  
+  /* Maximum number of iterations. */
+  int conv_itmax;
+  
+  /* Minimum normalized step size in state space. */
+  double conv_dmin;
+  
+  /* Threshold for radiance residuals [%] (-999 to skip filtering). */
+  double resmax;
+  
+  /* Carry out error analysis (0=no, 1=yes). */
+  int err_ana;
+  
+  /* Forward model error [%]. */
+  double err_formod[NDMAX];
+  
+  /* Noise error [W/(m^2 sr cm^-1)]. */
+  double err_noise[NDMAX];
+  
+  /* Pressure error [%]. */
+  double err_press;
+  
+  /* Vertical correlation length for pressure error [km]. */
+  double err_press_cz;
+  
+  /* Horizontal correlation length for pressure error [km]. */
+  double err_press_ch;
+  
+  /* Temperature error [K]. */
+  double err_temp;
+  
+  /* Vertical correlation length for temperature error [km]. */
+  double err_temp_cz;
+  
+  /* Horizontal correlation length for temperature error [km]. */
+  double err_temp_ch;
+  
+  /* Particle concentration error [cm-3]. */
+  double err_nn;
+
+  /* Particle radius error [m-6]. */
+  double err_rr;
+
+  /* Particle size distribution width error. */
+  double err_ss;
+  
+  /* Volume mixing ratio error [%]. */
+  double err_q[NGMAX];
+  
+  /* Vertical correlation length for volume mixing ratio error [km]. */
+  double err_q_cz[NGMAX];
+  
+  /* Horizontal correlation length for volume mixing ratio error [km]. */
+  double err_q_ch[NGMAX];
+  
+  /* Extinction error [1/km]. */
+  double err_k[NWMAX];
+
+  /* Vertical correlation length for extinction error [km]. */
+  double err_k_cz[NWMAX];
+  
+  /* Horizontal correlation length for extinction error [km]. */
+  double err_k_ch[NWMAX];
+  
+} ret_t;
 
 #endif

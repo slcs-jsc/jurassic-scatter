@@ -12,8 +12,6 @@ int main(int argc, char *argv[]) {
   
   static obs_t obs;
 
-  static aero_i aeroin;
-
   static aero_t aero;
   
   gsl_matrix *k;
@@ -35,18 +33,18 @@ int main(int argc, char *argv[]) {
   
   /* ============================================================= */
   /* Read aerosol and cloud data */
-  if(strcmp(argv[4],"-")==0 && ctl.sca_n>>0) {
-    read_aero(NULL, argv[3], &ctl, &aeroin);
+  if(strcmp(argv[4],"-")!=0 && ctl.sca_n>0) {
+    read_aero(NULL, argv[4], &ctl, &aero);
     /* Get aerosol/cloud optical properties */
-    get_opt_prop(&ctl, &aeroin, &aero);
+    get_opt_prop(&ctl, &aero);
   } 
-  else if (strcmp(argv[4],"-")==0 && ctl.sca_n>>0) { 
+  else if (strcmp(argv[4],"-")==0 && ctl.sca_n>0) { 
     ERRMSG("Please give aerosol file name or set SCA_N=0 for clear air simulation!");
   } 
   /* ============================================================= */
 
   /* Get sizes... */
-  n=atm2x(&ctl, &atm, NULL, NULL, NULL);
+  n=atm2x(&ctl, &atm, &aero, NULL, NULL, NULL);
   m=obs2y(&ctl, &obs, NULL, NULL, NULL);
   
   /* Check sizes... */
@@ -62,7 +60,7 @@ int main(int argc, char *argv[]) {
   kernel(&ctl, &atm, &obs, &aero, k);
   
   /* Write matrix to file... */
-  write_matrix(NULL, argv[5], &ctl, k, &atm, &obs, "y", "x", "r");
+  write_matrix(NULL, argv[5], &ctl, k, &atm, &aero, &obs, "y", "x", "r");
   
   /* Free... */
   gsl_matrix_free(k);

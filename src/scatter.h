@@ -30,14 +30,19 @@ void bhmie(double x,
 void gauher(double *x,
 	    double *w);
 
+/* Copy and initialize aerosol variables. */
+void copy_aero(ctl_t *ctl,
+	       aero_t *aero_dest,
+	       aero_t *aero_src,
+	       int init);
+
 /* Get aerosol/cloud optical properties (1D). */
 void get_opt_prop(ctl_t *ctl,
-		  aero_i *aeroin,
 		  aero_t *aero);
 
 /* Calculate optical properties with Mie theory for a log-normal mode. */
 void opt_prop_mie_log(ctl_t *ctl,
-		    aero_i *aeroin,
+		    aero_t *aero,
 		    int count,
 		    double *beta_ext,
 		    double *beta_sca,
@@ -45,7 +50,7 @@ void opt_prop_mie_log(ctl_t *ctl,
 
 /* Get optical properties from external database. - New */
 void opt_prop_external(ctl_t *ctl,
-		      aero_i *aeroin,
+		      aero_t *aero,
 		      int count,
 		      double *beta_ext,
 		      double *beta_sca,
@@ -55,7 +60,7 @@ void opt_prop_external(ctl_t *ctl,
 void read_aero(const char *dirname,
 	       const char *filename,
 	       ctl_t *ctl,
-	       aero_i *aeroin);
+	       aero_t *aero);
 
 /* Compute scattering source. */
 void srcfunc_sca(ctl_t *ctl,
@@ -105,6 +110,9 @@ void suncoord(double sec,
 	      double *azi,
 	      double *sza);
 
-
+/* Write particle data. */
+void write_aero(const char *dirname,
+		const char *filename,
+		aero_t *aero);
 
 #endif
