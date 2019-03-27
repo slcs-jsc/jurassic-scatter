@@ -36,6 +36,9 @@ typedef struct {
   double cof2[121];
   double f11[121];
   double f12[121];
+  double f13[121];
+  double f113[121];
+  double f114[121];
   double f14[121];
   double f22[121];
   double h2o[121];
@@ -51,8 +54,10 @@ typedef struct {
   double no2[121];
   double o3[121];
   double ocs[121];
+  double pan[121];
   double sf6[121];
   double so2[121];
+
 } clim_t;
 
 /* ------------------------------------------------------------
@@ -123,6 +128,8 @@ int main(int argc, char *argv[]) {
     czone=2;
   if (strcmp(zone, "equn")==0)
     czone=3;
+  if (strcmp(zone, "profile")==0)
+    czone=4;
 
   /* get path to climatology file */
   scan_ctl(argc, argv, "CLIMPATH", -1, "", climpath);
@@ -156,8 +163,10 @@ void get_clim_data(int czone,
   month = 1;
   zangle = 0;
   /* pwin */
-  if (czone == 1)
+  if (czone == 1){
     lat = 65;
+    month = 1;
+  }
   /* psum */
   if (czone == 2){
     lat = 65;
@@ -169,7 +178,8 @@ void get_clim_data(int czone,
       
   /* Read in climatology file */
   /* Set filename... */
-  sprintf(file, "%s%s", climpath, "clim_remedios.tab");
+  /* sprintf(file, "%s%s", climpath, "clim_remedios.tab"); */
+  sprintf(file, "%s", climpath);
   
   /* Write info... */
   printf("Read climatology: %s\n", file);
@@ -194,7 +204,7 @@ void get_clim_data(int czone,
     TOK(NULL, tok, "%lg", var);
     
     /* Select climate zone */
-    if (lat==lat1 && month==month1 && zangle==zang1){
+    if ((lat==lat1 && month==month1 && zangle==zang1) || czone== 4){
       
       if (strcmp(name, "TEMPERATURE")==0){
 	clim->tem[(int)alt] = mean;
@@ -216,8 +226,8 @@ void get_clim_data(int czone,
 	clim->clono2[(int)alt] = mean;
       if (strcmp(name, "CO")==0)
 	clim->co[(int)alt] = mean;
-      /* if (strcmp(name, "CO2")==0) */
-      /* 	clim->co2[(int)alt] = mean; */
+      if (strcmp(name, "CO2")==0)
+      	clim->co2[(int)alt] = mean;
       if (strcmp(name, "COF2")==0)
 	clim->cof2[(int)alt] = mean;
       if (strcmp(name, "F11")==0)
@@ -254,11 +264,17 @@ void get_clim_data(int czone,
 	clim->o3[(int)alt] = mean;
       if (strcmp(name, "OCS")==0)
 	clim->ocs[(int)alt] = mean;
+      if (strcmp(name, "PAN")==0)
+	clim->pan[(int)alt] = mean;
       if (strcmp(name, "SF6")==0)
 	clim->sf6[(int)alt] = mean;
       if (strcmp(name, "SO2")==0)
 	clim->so2[(int)alt] = mean; 
     }
+    if (strcmp(name, "F113")==0)
+      clim->f113[(int)alt] = mean;
+    if (strcmp(name, "F114")==0)
+      clim->f114[(int)alt] = mean;
   }
   
   /* Close file... */
@@ -271,15 +287,15 @@ void climatology(ctl_t *ctl,
 		 clim_t *clim,
 		 atm_t *atm) {
 
-  static int ig_co2=-999;
+  /* static int ig_co2=-999; */
   
-  double co2, *q[NGMAX]={NULL};
+  double *q[NGMAX]={NULL}; /* co2, */
   
   int ig, ip, iw, iz;
 
-  /* Find emitter index of CO2... */
-  if(ig_co2==-999)
-    ig_co2=find_emitter(ctl, "CO2");
+  /* /\* Find emitter index of CO2... *\/ */
+  /* if(ig_co2==-999) */
+  /*   ig_co2=find_emitter(ctl, "CO2"); */
   
   /* Identify variable... */
   for(ig=0; ig<ctl->ng; ig++) {
@@ -291,9 +307,11 @@ void climatology(ctl_t *ctl,
     if(strcasecmp(ctl->emitter[ig], "ClO")==0) q[ig]=clim->clo;
     if(strcasecmp(ctl->emitter[ig], "ClONO2")==0) q[ig]=clim->clono2;
     if(strcasecmp(ctl->emitter[ig], "CO")==0) q[ig]=clim->co;
-    /* if(strcasecmp(ctl->emitter[ig], "CO2")==0) q[ig]=clim->co2; */
+    if(strcasecmp(ctl->emitter[ig], "CO2")==0) q[ig]=clim->co2;
     if(strcasecmp(ctl->emitter[ig], "COF2")==0) q[ig]=clim->cof2;
     if(strcasecmp(ctl->emitter[ig], "F11")==0) q[ig]=clim->f11;
+    if(strcasecmp(ctl->emitter[ig], "F113")==0) q[ig]=clim->f113;
+    if(strcasecmp(ctl->emitter[ig], "F114")==0) q[ig]=clim->f114;
     if(strcasecmp(ctl->emitter[ig], "F12")==0) q[ig]=clim->f12;
     if(strcasecmp(ctl->emitter[ig], "F14")==0) q[ig]=clim->f14;
     if(strcasecmp(ctl->emitter[ig], "F22")==0) q[ig]=clim->f22;
@@ -310,6 +328,7 @@ void climatology(ctl_t *ctl,
     if(strcasecmp(ctl->emitter[ig], "NO2")==0) q[ig]=clim->no2;
     if(strcasecmp(ctl->emitter[ig], "O3")==0) q[ig]=clim->o3;
     if(strcasecmp(ctl->emitter[ig], "OCS")==0) q[ig]=clim->ocs;
+    if(strcasecmp(ctl->emitter[ig], "PAN")==0) q[ig]=clim->pan;
     if(strcasecmp(ctl->emitter[ig], "SF6")==0) q[ig]=clim->sf6;
     if(strcasecmp(ctl->emitter[ig], "SO2")==0) q[ig]=clim->so2;
   }
@@ -335,12 +354,12 @@ void climatology(ctl_t *ctl,
       else
 	atm->q[ig][ip]=0;
 
-    /* Set CO2... */
-    if(ig_co2>=0) {
-      co2=371.92429e-6+1.840618e-6*(atm->time[ip]-63158400.)/31557600.;
-      /* co2=co2*1; */
-      atm->q[ig_co2][ip]=co2;
-    }
+    /* /\* Set CO2... *\/ */
+    /* if(ig_co2>=0) { */
+    /*   co2=371.92429e-6+1.840618e-6*(atm->time[ip]-63158400.)/31557600.; */
+    /*   /\* co2=co2*1; *\/ */
+    /*   atm->q[ig_co2][ip]=co2; */
+    /* } */
     
     /* Set extinction to zero... */
     for(iw=0; iw<ctl->nw; iw++)
