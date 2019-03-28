@@ -62,7 +62,7 @@ linenos
 \item Ext: external database, e.g. for non-spherical particles \emph{not implemented yet}
 \end{itemize}
 
-\emph{Column~5} contains the path and name of an external file. For the Mie code complex refractive indices are required. The refractive index file is described in \ref{sec:Refrac}. For an external database of optical properties the file name must be given here. The optical properties database format is described in \ref{sec:OptData}.
+\emph{Column~5} contains the path and name of an external file. For the Mie code complex refractive indices are required. The refractive index file is described in Section~\ref{sec:Refrac}. For an external database of optical properties the file name must be given here. The optical properties database format is described in Section~\ref{sec:OptData}.
 
 \emph{Columns~6\,--\,8}, for Mie calculations we use mono-modal log-normal particle size distributions with the parameters (particle concentration, median radius and width) given in columns~6 to 8. If an external database is used columns~6 to 8 must be set to ``0''. %In case of a constant extinction column~6 contains the extinction coeffient in km$^{-1}$.
 
@@ -77,7 +77,7 @@ Anyway, real clouds usually have sharp cloud edges (e.g. lifting condensation le
 
 \subsection{Atmosphere File}
 \label{sec:AtmosphereFile}
-The atmosphere file (\texttt{atm.tab}) is a XX+1 column list containing the temperature, pressure and volume mixing ratio profiles on a certain altitude grid. The number of total columns increases with the number of trace gases. The column order of the trace gases must be the same as the trace gas name order given in the control file (\ref{sec:ControlFile}). The programme \texttt{climatology} (\ref{sec:ModuleClimatology}) can be used to generate some default atmosphere files with an arbitrary altitude grid. The atmosphere related control file parameters are listed in Table~\ref{tab:Control1}.
+The atmosphere file (\texttt{atm.tab}) is a XX+1 column list containing the temperature, pressure and volume mixing ratio profiles on a certain altitude grid. The number of total columns increases with the number of trace gases. The column order of the trace gases must be the same as the trace gas name order given in the control file (Section~\ref{sec:ControlFile}). The program \texttt{climatology} (Section~\ref{sec:ModuleClimatology}) can be used to generate some default atmosphere files with an arbitrary altitude grid. The atmosphere related control file parameters are listed in Table~\ref{tab:Control1}.
 
 The atmosphere file is the setup information for forward simulations. For retrievals it is the a priori information. Retrieval results are written in the same format (atmosphere structure) into a new file (e.g \texttt{atm\_res.tab}). The retrieval output file names are hard-coded.
 
@@ -197,7 +197,7 @@ DZ             & atmosphere vertical grid     & 1  & in km \\
 \hline
 REFRAC         & refraction in the atmosphere    &  1    & 1: on; 0: off \\
 RAYDS          & maximum step lengths for        &  10   & 10\,km: suitable for limb \\
-               & raytracing                      &       & 1\,km: suitable for nadir \\
+               & ray-tracing                      &       & 1\,km: suitable for nadir \\
 RAYDZ          & maximum vertical component of   &  1    & 1\,km is reasonable \\
                & step length                     &       &   \\
 TRANSS         & transition layer sampling step  & 0.02  & 0.01-0.1\,km is reasonable \\
@@ -265,7 +265,7 @@ For a single scattering simulation the multiple scattering flag must be set to 1
 %Continua are also already considered in the look-up tables. The scheme depends on the line-by-line model used to generate the look-up tables.
 
 \subsubsection{Emissivity look-up Tables}
-Basename for table files and filter function files. Look-up tables are created in instrument specific spectral resolution/sampling. The look-up tables are described in \ref{sec:Tables}.
+Basename for table files and filter function files. Look-up tables are created in instrument specific spectral resolution/sampling. The look-up tables are described in Section~\ref{sec:Tables}.
 
 \subsubsection{Emitter}
 \label{sec:Emitter}
@@ -279,33 +279,37 @@ A list of supported trace gases is given in Table~\ref{tab:Emitter}. The reading
 \cellcolor[RGB]{188,188,188}{Name} \\
 \hline
 \hline
-C2H2 & C$_2$H$_2$  & acetylene \\
-C2H6 & C$_2$H$_6$  & ethane \\
-CCl4 & CCl$_4$     & carbon tetrachloride \\
-CH4  & CH$_4$      & methane \\
-ClO  & ClO         & chlorine monoxide \\
-ClONO2 & ClONO$_2$ & chlorine nitrate \\
-CO   & CO          & carbon monoxide  \\
-COF2 & COF$_2$     & carbonyl fluoride \\
-F11  & CCl$_3$F    & trichlorofluoromethane  \\
+C2H2 & C$_2$H$_2$   & acetylene \\
+C2H6 & C$_2$H$_6$   & ethane \\
+CCl4 & CCl$_4$      & carbon tetrachloride \\
+CH4  & CH$_4$       & methane \\
+ClO  & ClO          & chlorine monoxide \\
+ClONO2 & ClONO$_2$  & chlorine nitrate \\
+CO   & CO           & carbon monoxide  \\
+COF2 & COF$_2$      & carbonyl fluoride \\
+F11  & CCl$_3$F     & trichlorofluoromethane  \\
 F12  & CCl$_2$F$_2$ & dichlorodifluoromethane \\
-F14  & CF$_4$      & tetrafluoromethane \\
-F22  & CHClF$_2$   & chlorodifluoromethane  \\
-H2O  & H$_2$O      & water \\
-H2O2 & H$_2$O$_2$  & hydrogen peroxide  \\
-HCN  & HCN         & hydrogen cyanide \\
-HNO3 & HNO$_3$     & nitric acid \\
-HNO4 & HNO$_4$     & peroxynitric acid  \\
-HOCl & HOCl        & hypochlorous acid \\
-N2O  & N$_2$O      & nitrous oxide \\
-N2O5 & N$_2$O$_5$  & dinitrogen pentoxide \\
-NH3  & NH$_3$      & ammonia \\
-NO   & NO          & nitric oxide \\
-NO2  & NO$_2$      & nitrogen dioxide \\
-O3   & O$_3$       & ozone  \\
-OCS  & OCS         & carbonyl sulfide \\
-SF6  & SF$_6$      & sulfur hexafluoride \\
-SO2  & SO$_2$      & sulfur dioxide  \\
+F13  & CClF$_3$     & chlorotrifluoromethane \\
+F113 & C$_2$C1$_3$F$_3$ & trichlorotrifluoroethane \\
+F114 & C$_2$Cl$_2$F$_4$ & 1,2-dichlorotetrafluoroethane; cryofluorane \\
+F14  & CF$_4$       & tetrafluoromethane \\
+F22  & CHClF$_2$    & chlorodifluoromethane  \\
+H2O  & H$_2$O       & water \\
+H2O2 & H$_2$O$_2$   & hydrogen peroxide  \\
+HCN  & HCN          & hydrogen cyanide \\
+HNO3 & HNO$_3$      & nitric acid \\
+HNO4 & HNO$_4$      & peroxynitric acid  \\
+HOCl & HOCl         & hypochlorous acid \\
+N2O  & N$_2$O       & nitrous oxide \\
+N2O5 & N$_2$O$_5$   & dinitrogen pentoxide \\
+NH3  & NH$_3$       & ammonia \\
+NO   & NO           & nitric oxide \\
+NO2  & NO$_2$       & nitrogen dioxide \\
+O3   & O$_3$        & ozone  \\
+OCS  & OCS          & carbonyl sulfide \\
+PAN  & CH$_3$COO$_2$NO$_2$ & peroxyacetyl nitrate \\
+SF6  & SF$_6$       & sulfur hexafluoride \\
+SO2  & SO$_2$       & sulfur dioxide  \\
 \hline
 \end{tabular}
 \label{tab:Emitter}
@@ -317,7 +321,7 @@ SO2  & SO$_2$      & sulfur dioxide  \\
 \subsubsection{Ray-tracing}
 The lengths of the line-of-sight segments to be integrated is either determined by RAYDS (total segment length) or RAYDZ (z-component of segment length). For limb scenarios RAYDS is most likely the limiting value and in nadir scenarios RAYDZ will be the limiting value. For limb-scenarios RAYDS\,=\,10\,km is reasonable. In nadir and sub-limb-scenarios a segment length of 10\,km is too much to sample steep atmospheric gradients (temperature, trace gases). Especially for scattering simulations, where limb, sub-limb and nadir paths are calculated a reasonable combination of RAYDS and RAYDZ is required for fast and accurate simulations. From our experience RAYDS\,=\,10\,km and RAYDZ\,=\,0.1\,--\,1\,km offer a good trade off for accuracy and efficiency. 
 
-For cloud and aerosol simulations with a transition layer larger than 20\,m the parameter TRANSS refines the sampling grid within the transition layer. The default value is TRANS\,=\,20\,m. (Please see further comments on raytracing and transition layers in Section~\ref{sec:lineofsight}.)
+For cloud and aerosol simulations with a transition layer larger than 20\,m the parameter TRANSS refines the sampling grid within the transition layer. The default value is TRANS\,=\,20\,m. (Please see further comments on ray-tracing and transition layers in Section~\ref{sec:lineofsight}.)
 
 \subsubsection{Spectral Windows}
 Each channel can be assigned to a window e.g. to have a constant extinction for all channels.
@@ -325,13 +329,26 @@ Each channel can be assigned to a window e.g. to have a constant extinction for 
 %##########################################################
 \subsection{Directory List}
 \label{sec:DirlistFile}
-\todo
+The directory list file (e.g. \texttt{dirlist-aero.asc}) contains a list of directories e.g. for different cloud setups. One directory must be given per line. It can be used to run various scenarios one after another, or in parallel. 
+
+\begin{table*}[!h]
+\caption{Example for \texttt{dirlist-aero.asc} file}
+\begin{tabular}{l}
+aerosol/sulfate
+aerosol/ash\_small
+aerosol/basalt\_small
+aerosol/andesite\_small
+aerosol/ash\_large
+aerosol/basalt\_large
+aerosol/andesite\_large
+\end{tabular}
+\end{table*} 
 
 %##########################################################
 
 \subsection{Observation File}
 \label{sec:ObservationFile}
-The observation file (\texttt{obs.tab}) is a multi-column list containing the geometry information (time, observer, view point and tangent point position) and the (measured) radiances (and/or transmittances) for each channel. (View point and tangent point differ, because of atmospheric refraction.) The number of columns increases with the number of channels. For retrievals this file contains the measurements. For forward simulations this file defines the viewing geometry. Columns 1 to 7 are mandatory. The forward simulation output is written in the same format (observation structure) into a new file specified when calling the forward model (e.g. \texttt{rad.tab}). The JURASSIC modules \texttt{limb} and \texttt{nadir} (Section~\ref{sec:limb} and \ref{sec:nadir}) can be used to create an observation geometry.
+The observation file (\texttt{obs.tab}) is a multi-column list containing the geometry information (time, observer, view point and tangent point position) and the (measured) radiances (and/or transmittances) for each channel. (View point and tangent point differ, because of atmospheric refraction.) The number of columns increases with the number of channels. For retrievals this file contains the measurements. For forward simulations this file defines the viewing geometry. Columns 1 to 7 are mandatory. The forward simulation output is written in the same format (observation structure) into a new file specified when calling the forward model (e.g. \texttt{rad.tab}). The JURASSIC modules \texttt{limb} and \texttt{nadir} (Sections~\ref{sec:limb} and \ref{sec:nadir}) can be used to create an observation geometry.
 
 \begin{table*}[!h]
 \caption{Columns of \texttt{obs.tab} file}
@@ -357,7 +374,8 @@ The observation file (\texttt{obs.tab}) is a multi-column list containing the ge
 
 \subsection{Optical Properties Database}
 \label{sec:OptData}
-\todo Not implemented yet.
+External data bases containing the optical properties ($\beta_e$, $\beta_s$, and the phase function) for e.g. non-spherical particles can be used instead of the MIE code for spherical particles.
+\todo describe input file format... 
 
 %##########################################################
 

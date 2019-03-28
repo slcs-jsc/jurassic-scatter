@@ -1,27 +1,20 @@
 \subsection{Quick Start}
 
-The following description is for Linux users. To download the code you have to apply for an account. First, register here:
-
-\texttt{https://cst.version.fz-juelich.de/}
-
-and second, send us an e-mail with your username. We will activate your account.\\
-\texttt{s.griessbach@fz-juelich.de} or\\
-\texttt{l.hoffmann@fz-juelich.de}
-
-
-You can either download the code as a .zip (.tar) file or use \texttt{git clone}. Before using \texttt{git clone}, please upload your ssh-key via the web interface. Then move to the directory where you want to put the code and type:
+The following description is for Linux users. Download the code from github:
 
 \begin{minted}
 [frame=lines,
 bgcolor=peach,
 formatcom=\color{black},
 linenos]{bash}
-git clone git@cst.version.fz-juelich.de:climate/jurassic.git
+git clone https://github.com/slcs-jsc/jurassic-scatter.git
 \end{minted}
 
-This will create the directory \texttt{jurassic} with the following subdirectories: \texttt{clim}, \texttt{docu}, \texttt{examples}, \texttt{lib}, \texttt{refrac}, \texttt{src}.
+or as a \texttt{.zip}-file.
 
-Go to \texttt{src} and run the Makefile. If it finishes without error, go to \texttt{examples} run \texttt{clear.sh}, \texttt{aero0.sh} and \texttt{aero1.sh}. If this works you're done and you can start your own projects.
+This will create the directory \texttt{jurassic-scatter} with the following subdirectories: \texttt{clim}, \texttt{docu}, \texttt{examples}, \texttt{lib}, \texttt{refrac}, \texttt{src}.
+
+Go to \texttt{src}, open the Makefile and comment/uncomment the compiler sections, and modify the paths to the libraries according to your requirements. Then compile the code. If it finishes without error, go to \texttt{examples} run \texttt{clear.sh}, \texttt{aero0.sh} and \texttt{aero1.sh}. If this works you're done and you can start your own projects.
 
 \begin{minted}
 [frame=lines,
@@ -29,6 +22,7 @@ bgcolor=peach,
 formatcom=\color{black},
 linenos]{bash}
 cd src
+emacs Makefile
 make
 cd ../examples
 clear.sh
@@ -36,10 +30,11 @@ aerosol0.sh
 aerosol1.sh
 \end{minted}
  
-If the makefile does not finish without any error either the paths to the GSL and/or NetCDF libraries are wrong or the libraries are not installed. Install the libraries and/or add the library and include paths to the makefile. If this does not work or if there are any other problems, please contact \texttt{s.griessbach@fz-juelich.de} or \texttt{l.hoffmann@fz-juelich.de}.
+If the makefile does not finish without any error either the path to the GSL is wrong or the library is not installed. Install the library and/or add the library and include paths to the makefile. If this does not work or if there are any other problems, please contact \texttt{s.griessbach@fz-juelich.de} or \texttt{l.hoffmann@fz-juelich.de}.
+\clearpage 
 
-\subsection{JURASSIC Repository}
-The JURASSIC repository contains 6 folders:
+\subsection{JURASSIC-scatter Repository}
+The JURASSIC-scatter repository contains 6 folders:
 \begin{table}[!h]
 \begin{tabular}{l|l}
 folder            & content \\
@@ -48,12 +43,12 @@ folder            & content \\
 \texttt{docu}     & this documentation \\
 \texttt{examples} & example setups \\
 \texttt{lib}      & scripts to install the required GSL and NetCDF libraries (if required)\\
-\texttt{refrac}   & selection of preformatted refractive index files for scattering simulations \\
+\texttt{refrac}   & selection of pre-formatted refractive index files for scattering simulations \\
 \texttt{src}      & JURASSIC source files \\
 \end{tabular}
 \end{table}
 
-The JURASSIC source code is written in C and we usually compile the code with the GCC. The code only requires the GSL and NetCDF libraries. In case the libraries are not installed and you do not have root access you can install the packages provided in \texttt{lib}.
+The JURASSIC source code is written in C and we usually compile the code with the GCC. The code only requires the GSL. In case the library is not installed and you do not have root access you can install the packages provided in \texttt{lib}.
 
 \subsection{How to do ...?~-~Examples}
 The following examples will show you how to use the JURASSIC modules, to do various forward simulations and retrievals. The detailed documentation of the JURASSIC modules is given in Section~\ref{sec:Modules}. For each example the required input files and output files are listed. The detailed descriptions of input and output files are given in Sections~\ref{sec:Input} and \ref{sec:Output}. The most substantial input file is the control file (Section~\ref{sec:ControlFile}). It contains all flags to setup the runs. We try to demonstrate the usage of all flags in the examples. The examples discussed here you will find in the \texttt{examples} folder as working examples.
@@ -186,7 +181,7 @@ $src/nadir aerosol1.ctl 800 0 10 1 obs.tab || exit
 
 echo "Call forward model..."
 
-$src/formod aerosol1.ctl obs_nadir.tab atm.tab rad_aero1.tab \
+$src/formod aerosol1.ctl obs.tab atm.tab rad_aero1.tab \
             AEROFILE aero1.tab|| exit
 \end{minted}
 %$
@@ -202,3 +197,4 @@ $src/formod aerosol1.ctl obs_nadir.tab atm.tab rad_aero1.tab \
 \item maybe one example for clear air nadir
 \item another example for clear air limb
 \end{itemize}
+\todo
