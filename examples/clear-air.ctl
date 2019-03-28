@@ -14,4 +14,4 @@ TBLBASE = tab/boxcar
 # Climatology/Atmosphere
 DZ = 1.
 ZMAX = 80.
-CLIMPATH = /home/zam/sgrie/1/PIRAT/jurassic/clim/
+CLIMPATH = ../clim/clim_remedios.tab

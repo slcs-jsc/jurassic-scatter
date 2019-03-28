@@ -20,7 +20,7 @@ SCA_MULT = 1
 DZ = 1
 ZMAX = 80
 ZMIN = 0 
-CLIMPATH = /home/zam/sgrie/1/PIRAT/jurassic/clim/
+CLIMPATH = ../clim/clim_remedios.tab
 
 #diese Eingabe ist auch möglich, aber nicht wirklich nötig
 #DIRLIST = dirlist-aero.asc
