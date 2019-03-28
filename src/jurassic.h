@@ -13,12 +13,12 @@
 #include <gsl/gsl_statistics.h>
 #include <gsl/gsl_complex_math.h>
 #include <math.h>
-#include <netcdf.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef MPI
 #include <mpi.h>
-
+#endif
 /* ------------------------------------------------------------
    Macros...
    ------------------------------------------------------------ */

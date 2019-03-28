@@ -3,19 +3,13 @@
 # -----------------------------------------------------------------------------
 
 # Executables...
-EXC = brightness climatology collect formod interpolate kernel limb nadir planck raytrace retrieval tab2bin
+EXC = brightness climatology formod interpolate kernel limb nadir planck raytrace retrieval tab2bin
 
 # Library directories...
-#LIBDIR = -L /usr/lib64 -L /usr/local/lib -L ../lib/build/lib64 -L /usr/lib
-LIBDIR = -L /usr/lib64 -L /usr/local_64/netcdf/v4.3.2/lib64
-#juropa
-#LIBDIR =  -L $(HOME)/jurassic/jurassic/lib/build/lib 
+LIBDIR = -L /usr/lib64 
 
 # Include directories...
-INCDIR = -I /usr/local/include  -I ../lib/build/include -I /usr/include  -I /usr/local_64/netcdf/v4.3.2/include/
-#INCDIR = -I /usr/local_64 -I /usr/local/include  -I ../lib/build/include -I /usr/include 
-#juropa
-#INCDIR = -I $(HOME)/jurassic/jurassic/lib/build/include
+INCDIR = -I /usr/local/include
 
 # OpenMP...
 OMP = 1
@@ -24,7 +18,7 @@ OMP = 1
 #PROF = 1
 
 # -----------------------------------------------------------------------------
-# Set flags for GNU compiler... (WORKSTATION)
+# Set flags for GNU compiler with/without openMP and without MPI...
 # -----------------------------------------------------------------------------
 
 # Compiler...
@@ -39,27 +33,18 @@ CFLAGS += -fopenmp
 endif
 
 # -----------------------------------------------------------------------------
-# Load/unlaod modules for JURECA
+# Set flags for open MPI C wrapper compiler with/without openMP...
 # -----------------------------------------------------------------------------
-#module purge
-#module load Intel/2017.0.098-GCC-5.4.0 #GCC compiler
-#module load ParaStationMPI/5.1.5-1
-#module load GSL/2.2.1
-#module load netCDF/4.4.1
+# # Compiler...
+# CC = mpicc 
 
-# -----------------------------------------------------------------------------
-# Set flags for INTEL compiler... (JUROPA)
-# -----------------------------------------------------------------------------
-# Compiler...
-CC = mpicc
+# # CFLAGS...
+# CFLAGS = $(INCDIR) -pedantic-errors -Wall -Wextra -Werror -Wshadow -Wpointer-arith -Wcast-qual -Wcast-align -Wconversion -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls -Wnested-externs -Wno-long-long -Winline -fno-common -DHAVE_INLINE
 
-# CFLAGS...
-CFLAGS = $(INCDIR) 
-
-# Flags for OpenMP...
-ifdef OMP
-CFLAGS += -fopenmp
-endif
+# # Flags for OpenMP...
+# ifdef OMP
+# CFLAGS += -fopenmp
+# endif
 # -----------------------------------------------------------------------------
 
 # Flags for profiling...
@@ -70,7 +55,7 @@ CFLAGS += -O3
 endif
 
 # LDFLAGS...
-LDFLAGS = $(LIBDIR) -lnetcdf -lgsl -lgslcblas -lm
+LDFLAGS = $(LIBDIR) -lgsl -lgslcblas -lm
 
 # -----------------------------------------------------------------------------
 # Targets...

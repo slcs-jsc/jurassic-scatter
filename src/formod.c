@@ -29,12 +29,11 @@ int main(int argc, char *argv[]) {
   
   char dirlist[LEN], wrkdir[LEN], task[LEN], aerofile[LEN];
 
-  double start, end, duration, global;
-
   /* ###################################################################### */  
   int myrank=0, numprocs=1, nfiles=-1;
 
 #ifdef MPI /* MPI_VERSION */
+  double start, end, duration, global;
   int ierr; 
 
   /* Initialize MPI */
