@@ -84,7 +84,7 @@ void raytrace(ctl_t *ctl,
     cart2geo(x, &z, &lon, &lat);
     
     /* Check if LOS hits the ground or has left atmosphere and save last los point. */
-    if(z<zmin+0.001 || z>zmax-0.001) {
+    if(z<zmin+0.001 || z>zmax+0.001) {
       stop=(z<zmin+0.001 ? 2 : 1);
       los->z[los->np] = z;
       los->lon[los->np]=lon;
@@ -197,7 +197,7 @@ void add_aerosol_layers(ctl_t *ctl,
 
   los_t *los_aero;
 
-  double alti[4*NLMAX], altimax, altimin, x1[3], x2[3], x3[3], tt=0., epsilon=0.001; 
+  double alti[4*NLMAX], altimax, altimin, x1[3], x2[3], x3[3], tt=0., epsilon=0.005; 
   /* deltatop=10., deltabot=10., */
 
   int il, ig, iw, jl=0, ip, it;
