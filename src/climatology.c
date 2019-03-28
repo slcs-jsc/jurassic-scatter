@@ -3,10 +3,12 @@
 #include "atmosphere.h"
 
 /* Little Helper: Program to define an atmosphere grid and to 
-   interpolate the Remedios climatology onto the defined grid.
-   One can choose between a polar winter, polar summer,
-   midlatitude, or equatorial climatology. The midlatitude 
-   climatology is the default.*/
+   add atmospheric parameters. One can either interpolate the 
+   Remedios climatology for the polar winter, polar summer, 
+   midlatitude, or equatorial region onto the defined grid, 
+   or provide a single external profile to be interpolated 
+   onto the defined grid. The midlatitude climatology and a 
+   1 km are the defaults if no values are given. */
 
 /* ------------------------------------------------------------
    Structs...
