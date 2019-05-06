@@ -1,0 +1,246 @@
+%\documentclass[12pt,a4paper,titlepage,openright,twoside]{book}
+\documentclass[12pt,a4paper,titlepage,twoside]{article}
+%\documentclass[12pt,a4paper,titlepage,draft]{book}
+%\documentclass[12pt,a4paper,titlepage,draft]{article}
+\usepackage{amsmath, amssymb, dcolumn, amsxtra, alltt}
+
+\usepackage{latexsym,graphicx}
+\usepackage{psfrag}
+\usepackage{epsfig,multicol}
+\usepackage{float}
+
+\usepackage{parskip}
+\usepackage{multirow}
+%\usepackage{lscape} 
+%\usepackage{url} 
+\usepackage{fancyvrb}
+
+%\usepackage{pdflscape}
+%\usepackage{breakurl}
+
+%\usepackage[disable]{todonotes}
+\usepackage{todonotes}
+
+\usepackage[british,ngerman]{babel}
+\usepackage[round,authoryear]{natbib}
+\usepackage[bf]{caption}
+
+\usepackage{color}
+%\usepackage[table]{xcolor}
+
+\usepackage{minted} %code syntax highlightning
+\usepackage{hyperref}
+
+\setlength{\evensidemargin}{0.3cm}
+\setlength{\textwidth}{15.5cm}
+
+% \renewcommand{\captionfont}{\small\itshape}
+\renewcommand{\captionfont}{\itshape}
+\newcommand{\ttt}[1]{\texttt{#1}}
+
+\definecolor{pink}{RGB}{255,0,155}
+\definecolor{lightblue}{RGB}{153,255,255}
+\definecolor{lightorange}{RGB}{255,200,0}
+\definecolor{peach}{RGB}{255,204,153}
+\definecolor{mediumblue}{RGB}{00,200,200}
+\newcommand{\ud}{\,\mathrm{d}}
+\newcommand{\tcb}{\cellcolor{lightblue} } 
+\newcommand{\tcp}{\cellcolor{pink} } 
+\newcommand{\tco}{\cellcolor{lightorange} } 
+\newcommand{\tcmb}{\textcolor{mediumblue} } 
+
+%\newcommand{\todo}{\textcolor{red}{\large{TO DO}}}
+
+\begin{document}
+\selectlanguage{british}
+
+%\frontmatter
+\author{Simulation Laboratory Climate Science (SLCS),\\
+  J\"u{}lich Supercomputing Centre (JSC),\\ Forschungszentrum J\"u{}lich GmbH (FZJ), J\"u{}lich, Germany \footnote{Contact: l.hoffmann@fz-juelich.de, s.griessbach@fz-juelich.de, p.baumeister@fz-juelich.de}}
+\title{Porting JURASSIC-scatter to GPUs}
+
+\maketitle
+
+\begin{abstract}
+JURASSIC-scatter is a software module by Sabine Griessbach for 
+JURASSIC (Hoffmann \emph{et al.}) to compute
+the scattering contribution of aerosol clouds
+to the emission and absorption of the atmosphere.
+This document outlines a strategy of how a possible porting
+of the scattering module could lead to an efficient implementation on GPUs.
+\end{abstract}
+
+\tableofcontents
+
+\section{Introduction}\label{sec:intro}
+\todo[inline]{To be written}
+
+\subsection{Reference Versions}
+As original code we refer to the branch \ttt{master} in stage\\ \ttt{01b9845e3e8836128d0957e4417eae1afd6811c2} 
+of the \ttt{jurassic-scatter} version provided at 
+\ttt{https://github.com/slcs-jsc/jurassic-scatter}.
+Furthermore, when \ttt{jurassic-GPU} is mentioned, we refer
+to stage\\
+\ttt{3f10133f5123070d696c2e5c687700c87dcc8a0c} of branch \ttt{master}
+of \ttt{Jurassic-GPU-retrieval} on \ttt{gitlab.version.fz-juelich.de}
+which has been ported in the framework of the 
+POWER Acceleration and Design Center.
+
+\subsection{Prerequisites}
+Before starting to modify code, a recommended
+preparatory steps are
+\begin{itemize}
+\item Define input decks and reference output files of scenarios that are relevant for production with heavy workloads.
+\item Verify the correctness of \ttt{JURASSIC-GPU-retrieval}
+\item Unify the code bases of \ttt{JURASSIC}, \ttt{JURASSIC-GPU} and \ttt{JURASSIC-scatter}
+\end{itemize}
+
+\section{Code Analysis}\label{sec:analysis}
+The relevant call tree of forward model in \ttt{jurassic-scatter} is structured as follows:
+\begin{Verbatim}[tabsize=4]
+formod 								(forwardmodel.c:13)
+	formod_pencil					(forwardmodel.c:169)
+		raytrace					(lineofsight.c:5)
+		[intpol_tbl, formod_continua, srcfunc_planck]
+		srcfunc_sca					(scatter.c:642)
+			srcfunc_sca_1d 			(scatter.c:665)
+				formod_pencil		(forwardmodel.c:169)
+\end{Verbatim}
+Irrelevant branches are cleaned from the full call tree.
+The recursive calling of \ttt{formod\_pencil} 
+in \ttt{srcfunc\_sca\_1d} forwards an \ttt{int} argument
+but decremented such that the recursion finalizes
+after a number of steps defined in the input deck.
+Usually, the depth of recursion is \ttt{mult\_scat}=$2$, i.e.~
+there are primary rays treated with scattering
+and secondary rays treated without scattering.
+No ternary rays are spawned by the secondary rays 
+to keep the workload limited.
+If the variation or the resolution of atmospheric data
+w.r.t.~latitude and longitude is so low that we can neglect
+dependence on \ttt{lat} and \ttt{lon} angles we call it
+the 1D model as the atomspheric quantites only depend on the altitude.
+An extension of \ttt{jurassic-scatter} towards 3D atmospheres
+is planned and prepared in the code base 
+(c.f.~\ttt{srcfunc\_sca\_3d} defined in \ttt{scatter.c:809}).
+While in the 1D model, usually $N_{r2} = 28$ secondary rays are created
+at each point on the line-of-sight of a primary ray, the 3D
+model will require a higher sampling as it needs to cover the solid
+angle $\Omega$ rather than the azimuthal angle $\vartheta$ only.
+\todo[inline]{How many more secondary rays in 3D?}
+
+Satellite instruments usually feature 
+a large number (\ttt{nd}) of detector channels at different infra-red frequencies
+and
+a fan of (primary) rays. 
+We assume that the number of primary rays ($N_{r1}$) is of the order $30$.
+Furthermore, we assume that each primary ray is sampled with about hundreds of points
+(\ttt{np}) of which about a hundred or more lie inside a cloud layer and, hence,
+need to create secondary rays.
+This defines a rough range of how much potential parallelism can be found from these
+levels:
+$$ \text{Parallelism} \sim  N_{r1} \cdot \ttt{np} \cdot N_{r2} \cdot \ttt{nd} $$
+which is of the order $10^5 \cdot \ttt{nd}$ in the 1D case and even more in the 3D case, 
+so sufficient parallelism for the block-level of a GPU is provided.
+
+As investigated during the porting of \ttt{JURASSIC-GPU}, all \ttt{nd} frequencies
+feature a common branching scheme which enfavours vectorization over this level of
+parallelism. Vectorization here refers to a mapping of 1 GPU-threat to 1 frequency
+which has shown to produce an efficient GPU code for the version without scattering.
+Note that each secondary ray will exactly perform the operations provided by
+the forward model in \ttt{JURASSIC-GPU}.
+This allows to limit the efforts of porting the scattering module
+to a restructuring of the high-level routines.
+
+Additional parallelism could in principle be exploited for sampling points on each of the secondary rays,
+however, such code architectures have also been investigated during the porting efforts 
+for \ttt{JURASSIC-GPU}. Here, the Emissivity-Growth-Approximation (EGA) leads
+to an inherently serial loop over the sampling points along a ray path.
+Therefore, parallelization over points requires more memory transfers for intermediate results than a
+kernel-fusion scheme where the largest portion of data exchanged between (sub-)kernels
+is passed in registers.
+
+
+\section{Suggested Restructuring}
+In order to leverage the aforementioned block-level parallelism efficiently 
+it is best to let the GPU drivers do the load balancing. This works best,
+when a large number of tasks (here, 1 task = 1 secondary ray) is specified
+in a GPU-kernel launch. 
+In particular as the number of sampling points in a secondary ray may differ strongly depending on its geometry. 
+Therefore, we suggest to restructure the scattering module as follows:
+\ttt{raytrace} and calls to \ttt{formod\_pencil} with scattering stay on
+the CPU and only calls to \ttt{formod\_pencil} without scattering
+is executed on the GPU, preferentially leveraging the validated CUDA
+versions from \ttt{JURASSIC-GPU}.
+
+Unfortunately, this requires that the simplified call tree shown above is
+duplicated to have two CPU phases: 
+\emph{work-planning} and \emph{result-collection}.
+In between the two CPU phases, a GPU phase will compute the contribution
+to the radiation \ttt{srcfunc}tion of the secondary rays.
+During work-planning, raytracing determines the ray path, i.e.~the position 
+of the sampling points its tangent vector. 
+These $6$ numbers are the necessary input variables to a secondary ray.
+Additional useful meta-information is the identifier of the parent ray point. 
+Further input information as e.g.~the atmospheric data are common for all rays
+and, therefore, do not need to be duplicated.
+All input information could be grouped and inserted into a queue or array.
+Raytracing and input information are independent of the channel frequency
+(since we assume achromatic diffraction), so apply to an entire CUDA-block.
+The results are radiance correction which may vary strongly depending on the
+channel index.
+After the GPU has finished all secondary rays in the work queue, 
+the result-collection version of the
+call-tree needs to be traversed.
+Here, loops over frequencies are necessary.
+
+\subsection{Generalization to multiple scattering}
+Above, we assumed a scenario with primary rays
+treated on the CPU and secondary rays computed on the GPU.
+In general, we would like to preserve the functionality
+of the general multiple scattering with a finite depth $d$ with the recursive call to \ttt{formod\_pencil}.
+Then, only the wording needs to change from secondary ray to $d$-level ray.
+It would be a matter of investigation if it becomes necessary to
+treat the \emph{result-collection} phase for second-level to ($d$-1)-level rays also on the GPU.
+This would require a modified GPU forward model as we have to load the external contribution
+to the source function in addition to \ttt{srcfunc\_planck}.
+
+\subsection{Keeping all devices busy}
+The structure (CPU-plan, GPU-work, CPU-collect) infers a synchronization and
+an idle GPU during CPU phases and vice versa.
+In order to utilize a HPC node to the full extend,
+we recommend to bring additional levels of parallelism which have so far been
+treated outside the executable into the code. This allows to pipeline
+the approach outlined above which might in the best case lead to a saturation
+of the device utilization.
+
+\subsection{Programming languages}
+\ttt{JURASSIC} and \ttt{jurassic-scatter} are written in \ttt{C} while
+additions made for \ttt{JURASSIC-GPU} are written in \ttt{CUDA} and \ttt{C++} 
+using arrays of plain old data types.
+The reason for \ttt{C++} over \ttt{C} is a generic programming for the 
+memory management (allocation, transfers, free) and 
+non-type templates used for multi-versioning, 
+a powerful method for the resource utilization of GPU-kernels.
+
+%%% It would, in general, be possible to write a JURASSIC-Version which
+%%% is in \ttt{C} again and uses unified memory. However, we would need
+%%% to recompile with the proper setting for four preprocessor flags
+%%% 	-D HAS_CO2/H2O/N2/O2
+%%% before production runs to get the same performance.
+%%% Alternatively, we can try to mimique template-assisted multi-versioning
+%%% by preprocessor macros.
+%%% Unified memory would make the usage of all transfer functions obsolete.
+%%% Allocations could be treated with a proprocessor macro.
+%%% ToDo: check why we need e.g. template < typename obs_t > in Common.hxx? 
+%%%         --> Because of copy_ray being used in-copy and out-copy
+%%% inline functions require C99 standard.
+
+
+
+%\begin{appendix}
+%\end{appendix}
+
+%\bibliographystyle{plainnat}
+
+\end{document}
