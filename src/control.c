@@ -109,7 +109,7 @@ double scan_ctl(int argc,
   FILE *in=NULL;
   
   char dummy[LEN], fullname1[LEN], fullname2[LEN], line[LEN],
-    msg[LEN], rvarname[LEN], rval[LEN];
+    msg[2*LEN], rvarname[LEN], rval[LEN];
   
   int contain=0, i;
   

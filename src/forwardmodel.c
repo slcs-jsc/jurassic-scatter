@@ -507,7 +507,7 @@ void read_tbl(ctl_t *ctl,
   
   FILE *in;
   
-  char filename[LEN], line[LEN];
+  char filename[2*LEN], line[LEN];
   
   double eps, eps_old, press, press_old, temp, temp_old, u, u_old;
   
@@ -644,7 +644,7 @@ void srcfunc_planck(ctl_t *ctl,
   
   static int i, init=0, n, nplanck=1201;
 
-  char filename[LEN];
+  char filename[2*LEN];
   
   int id, it;
   

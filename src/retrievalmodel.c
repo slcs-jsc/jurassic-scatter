@@ -422,7 +422,7 @@ void optimal_estimation(ret_t *ret,
   
   FILE *out;
   
-  char filename[LEN];
+  char filename[2*LEN];
   
   double chisq, chisq_old, disq=0, lmpar=0.001;
   

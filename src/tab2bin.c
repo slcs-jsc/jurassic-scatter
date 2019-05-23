@@ -9,7 +9,7 @@ int main(int argc, char *argv[]) {
   
   FILE *out;
   
-  char filename[LEN];
+  char filename[2*LEN];
   
   int id, ig, ip, it;
   

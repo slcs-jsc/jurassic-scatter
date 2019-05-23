@@ -78,7 +78,7 @@ void init_tbl(ctl_t *ctl,
   
   FILE *in;
   
-  char filename[LEN], line[LEN];
+  char filename[2*LEN], line[LEN];
   
   double eps, eps_old, press, press_old, temp, temp_old, u, u_old,
     f[NSHAPE], fsum, nu[NSHAPE], tmin=100, tmax=400;
