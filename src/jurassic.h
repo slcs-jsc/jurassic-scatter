@@ -530,7 +530,6 @@ typedef struct {
   double p[NLMAX][NDMAX][NTHETA];
 
   /* work queue architecture introduced for GPU acceleration */
-  int queue_state;
   queue_t queue;
   
  } aero_t;

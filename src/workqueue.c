@@ -18,6 +18,7 @@ int init_queue(queue_t *q, int size) {
       q->items = malloc(mem);
       printf("# %s(%d) requires %.3f MiByte\n", __func__, size, (double)mem/1048576.);
     } else if (NULL != q->items) { 
+      printf("# %s(%d) releases the queue.\n", __func__, size);
       free(q->items);
       q->items = NULL; 
       return 0;

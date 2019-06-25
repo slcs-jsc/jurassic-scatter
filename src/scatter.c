@@ -681,14 +681,10 @@ void srcfunc_sca_1d(ctl_t *ctl,
 
   int n1=1, n2=2;
   double midang=83, up=92, down=81, step=1+2;
-
-#ifdef  SCATTER_DEBUG
-  printf("# %s(..., scattering=%d);\n", __func__, scattering);
-#endif 
-
+  
   /* Allocate... */
   ALLOC(obs2, obs_t, 1);
-
+  
   /* Set scattering phase function angles... */
   for(itheta=0; itheta<NTHETA; itheta++)
     theta[itheta]=(double)itheta*M_PI/180.;
@@ -698,7 +694,7 @@ void srcfunc_sca_1d(ctl_t *ctl,
   dnorth[1]=-x[1];
   dnorth[2]=2*RE-x[2];
   bascoord(x, dnorth, lx, ly, lz);
-
+  
   /* Set angles - tested version with nalpha=28 and Fibonacci Numbers */
   alpha[0] = 0;
   for (ir=nalpha/2-4; ir<nalpha/2+4; ++ir){
@@ -742,8 +738,8 @@ void srcfunc_sca_1d(ctl_t *ctl,
     /* Get pencil beam radiance... */
     formod_pencil(ctl, atm, obs2, aero, scattering-1, ir);
   }
-  if (Queue_Prepare == aero->queue_state) return;
-
+  if (Queue_Prepare == aero->queue.state) return;
+  
   /* Get orthonormal basis (with respect to LOS)... */
   bascoord(dx, x, sx, sy, sz);  
   

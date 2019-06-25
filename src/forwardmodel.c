@@ -20,6 +20,7 @@ void formod(ctl_t *ctl,
   static int mask[NDMAX][NRMAX];
   
   int id, ir;
+  int begin, end;
   
   /* Save observation mask... */
   for(id=0; id<ctl->nd; id++)
@@ -37,10 +38,10 @@ void formod(ctl_t *ctl,
   if (1) { /* switch usage of queue on(1) and off(0) here */
     init_queue(&aero->queue, 1 << 20);
     printf("# %s init queue with %d elements\n", __func__, aero->queue.capacity);
-    aero->queue_state = Queue_Prepare; /* activate the work queue */ 
-    printf("\n# %s start Queue_Prepare\n", __func__);
+    aero->queue.state = Queue_Prepare; /* activate the work queue */ 
+    printf("# %s start Queue_Prepare\n", __func__);
   } else {
-    aero->queue_state = Queue_Inactive; /* deactivate the work queue */
+    aero->queue.state = Queue_Inactive; /* deactivate the work queue */
     printf("# %s Queue_Inactive\n", __func__);
   }
   
@@ -48,7 +49,8 @@ void formod(ctl_t *ctl,
   formod_pencil(ctl, atm, obs, aero, ctl->sca_mult, 0);
   
 #ifdef _OPENMP
-/* #pragma omp parallel for schedule(dynamic) private(ir,id) */
+#pragma omp parallel for schedule(dynamic) private(ir,id) \
+            if(Queue_Inactive == aero->queue.state)
 #endif
 
   /* Do remaining ray paths in parallel... */
@@ -56,26 +58,36 @@ void formod(ctl_t *ctl,
     formod_pencil(ctl, atm, obs, aero, ctl->sca_mult, ir);
   }
   
-  if (Queue_Prepare == aero->queue_state) {
+  if (Queue_Prepare == aero->queue.state) {
     
       if (1) { /* execute on CPU */
-        aero->queue_state = Queue_Execute;
-        printf("\n# %s start Queue_Execute [%d, %d) on CPU\n", __func__, 
-                 aero->queue.begin,      aero->queue.end);
-        for(id = aero->queue.begin; id < aero->queue.end; ++id) {
+        aero->queue.state = Queue_Execute;
+        begin = aero->queue.begin;
+        end   = aero->queue.end;
+        printf("# %s start Queue_Execute [%d, %d) on CPU\n", __func__, begin, end);
+        /* Do first ray path sequential (to initialize model)... */
+        for(id = begin; id < begin + 1; ++id) {
+          formod_pencil(ctl, atm, NULL, aero, 0, id); /* the work queue index id is passed via the ir argument */
+        } /* id-loop */
+#ifdef _OPENMP
+#pragma omp parallel for schedule(dynamic) private(id)
+#endif
+        /* Do remaining ray paths in parallel... */
+        for(id = begin + 1; id < end; ++id) {
           formod_pencil(ctl, atm, NULL, aero, 0, id); /* the work queue index id is passed via the ir argument */
         } /* id-loop */
       } else {
           ERRMSG("No GPU version of formod_pencil implemented!");
       }
       
-      aero->queue_state = Queue_Collect;
-      printf("\n# %s start Queue_Collect\n", __func__);
+      aero->queue.state = Queue_Collect;
+      printf("# %s start Queue_Collect\n", __func__);
       for(ir=0; ir<obs->nr; ir++){
         formod_pencil(ctl, atm, obs, aero, ctl->sca_mult, ir);
       }
-      
-      aero->queue_state = Queue_Inactive; /* done */
+
+      init_queue(&aero->queue, -1); /* free resources */
+      aero->queue.state = Queue_Inactive; /* done */
   }
 
   /* Apply field-of-view convolution... */
@@ -219,8 +231,11 @@ void formod_pencil(ctl_t *ctl,
 
   int i, id, ip, ip0, ip1;
 
+  int const Queue_Prepare_Leaf = Queue_Prepare << 1;
+  int const Queue_Execute_Leaf = Queue_Execute << 1;
+  int const Queue_Collect_Leaf = Queue_Collect << 1;
 #ifdef WORK_QUEUE
-  int const queue_mode = aero->queue_state << (0 == scattering);
+  int const queue_mode = aero->queue.state << (0 == scattering);
 #else
   int const queue_mode = Queue_Inactive; /* Queue_Inactive == -1 */
 #endif
@@ -229,7 +244,7 @@ void formod_pencil(ctl_t *ctl,
   printf("# %s(..., %p, aero, scattering=%d, ir=%d) queue_mode = %d;\n", __func__, (void*)obs, scattering, ir, queue_mode);
 #endif 
   
-if ((Queue_Collect|Queue_Prepare << 1|Queue_Prepare) & queue_mode) { /* CPp */
+if ((Queue_Collect|Queue_Prepare_Leaf|Queue_Prepare) & queue_mode) { /* CPp */
   /* Allocate... */
   ALLOC(los, los_t, 1);
 
@@ -237,13 +252,13 @@ if ((Queue_Collect|Queue_Prepare << 1|Queue_Prepare) & queue_mode) { /* CPp */
   raytrace(ctl, atm, obs, aero, los, ir);
 } /* CPp */
 
-if (Queue_Prepare << 1 == queue_mode) { /* Aap */
+if (Queue_Prepare_Leaf == queue_mode) { /* Aap */
   i = push_queue(&aero->queue, (void*)los, (void*)obs, ir); /* push input and pointer to output */
   if (i < 0) ERRMSG("Too many queue items!");
   return;
 } /* Aap */
 
-if (Queue_Collect << 1 == queue_mode) { /* Aac */
+if (Queue_Collect_Leaf == queue_mode) { /* Aac */
   pop_queue(&aero->queue, (void*)&los, (void*)&obs2, &ir); /* pop result */
   /* Copy results... */
   for(id=0; id<ctl->nd; id++) {
@@ -253,11 +268,11 @@ if (Queue_Collect << 1 == queue_mode) { /* Aac */
   return;
 } /* Aac */
 
-if (Queue_Execute << 1 == queue_mode) { /* Aax */
+if (Queue_Execute_Leaf == queue_mode) { /* Aax */
   get_queue_item(&aero->queue, (void*)&los, (void*)&obs, &ir, ir); /* get input */
 } /* Aax */
 
-if ((Queue_Collect|Queue_Execute << 1) & queue_mode) { /* Cx */
+if ((Queue_Collect|Queue_Execute_Leaf) & queue_mode) { /* Cx */
   /* Read tables... */
   if(!init) {
     init=1;
@@ -278,7 +293,7 @@ if ((Queue_Collect|Queue_Execute << 1) & queue_mode) { /* Cx */
   /* Loop over LOS points... */
   for(ip=0; ip<los->np; ip++) {
 
-if ((Queue_Collect|Queue_Execute << 1) & queue_mode) { /* Cx */
+if ((Queue_Collect|Queue_Execute_Leaf) & queue_mode) { /* Cx */
     /* Get trace gas transmittance... */
     intpol_tbl(ctl, tbl, los, ip, tau_path, tau_gas);
 
@@ -338,7 +353,7 @@ if ((Queue_Collect) & queue_mode) { /* C */
     /* Compute radiative transfer without scattering source... */
     else {
 
-if ((Queue_Collect|Queue_Execute << 1) & queue_mode) { /* Cx */
+if ((Queue_Collect|Queue_Execute_Leaf) & queue_mode) { /* Cx */
       /* Loop over channels... */
       for(id=0; id<ctl->nd; id++)
         if(tau_gas[id]>0) {
@@ -366,7 +381,7 @@ if ((Queue_Collect|Queue_Execute << 1) & queue_mode) { /* Cx */
 } /* Cx */
   }
 
-if ((Queue_Collect|Queue_Execute << 1) & queue_mode) { /* Cx */
+if ((Queue_Collect|Queue_Execute_Leaf) & queue_mode) { /* Cx */
   /* Add surface... */
   if(los->tsurf>0) {
     srcfunc_planck(ctl, los->tsurf, src_planck);

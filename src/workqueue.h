@@ -21,6 +21,7 @@ typedef struct {
     int capacity;
     int begin;
     int end;
+    int state;
 } queue_t;
           
 /* ------------------------------------------------------------
