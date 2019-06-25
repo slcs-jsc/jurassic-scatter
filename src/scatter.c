@@ -682,7 +682,9 @@ void srcfunc_sca_1d(ctl_t *ctl,
   int n1=1, n2=2;
   double midang=83, up=92, down=81, step=1+2;
 
+#ifdef  SCATTER_DEBUG
   printf("# %s(..., scattering=%d);\n", __func__, scattering);
+#endif 
 
   /* Allocate... */
   ALLOC(obs2, obs_t, 1);

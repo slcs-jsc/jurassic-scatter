@@ -34,7 +34,7 @@ void formod(ctl_t *ctl,
     get_opt_prop(ctl, aero);
   }
 
-  if (0) {
+  if (1) { /* switch usage of queue on(1) and off(0) here */
     init_queue(&aero->queue, 1 << 20);
     printf("# %s init queue with %d elements\n", __func__, aero->queue.capacity);
     aero->queue_state = Queue_Prepare; /* activate the work queue */ 
@@ -225,7 +225,9 @@ void formod_pencil(ctl_t *ctl,
   int const queue_mode = Queue_Inactive; /* Queue_Inactive == -1 */
 #endif
 
+#ifdef  FORMOD_DEBUG
   printf("# %s(..., %p, aero, scattering=%d, ir=%d) queue_mode = %d;\n", __func__, (void*)obs, scattering, ir, queue_mode);
+#endif 
   
 if ((Queue_Collect|Queue_Prepare << 1|Queue_Prepare) & queue_mode) { /* CPp */
   /* Allocate... */
@@ -236,7 +238,8 @@ if ((Queue_Collect|Queue_Prepare << 1|Queue_Prepare) & queue_mode) { /* CPp */
 } /* CPp */
 
 if (Queue_Prepare << 1 == queue_mode) { /* Aap */
-  push_queue(&aero->queue, (void*)los, (void*)obs, ir); /* push input and pointer to output */
+  i = push_queue(&aero->queue, (void*)los, (void*)obs, ir); /* push input and pointer to output */
+  if (i < 0) ERRMSG("Too many queue items!");
   return;
 } /* Aap */
 
