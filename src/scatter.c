@@ -1,4 +1,5 @@
 #include "scatter.h"
+#include "workqueue.h"
 
 /*****************************************************************************/
 
@@ -680,10 +681,12 @@ void srcfunc_sca_1d(ctl_t *ctl,
 
   int n1=1, n2=2;
   double midang=83, up=92, down=81, step=1+2;
-  
+
+  printf("# %s(..., scattering=%d);\n", __func__, scattering);
+
   /* Allocate... */
   ALLOC(obs2, obs_t, 1);
-  
+
   /* Set scattering phase function angles... */
   for(itheta=0; itheta<NTHETA; itheta++)
     theta[itheta]=(double)itheta*M_PI/180.;
@@ -693,7 +696,7 @@ void srcfunc_sca_1d(ctl_t *ctl,
   dnorth[1]=-x[1];
   dnorth[2]=2*RE-x[2];
   bascoord(x, dnorth, lx, ly, lz);
-  
+
   /* Set angles - tested version with nalpha=28 and Fibonacci Numbers */
   alpha[0] = 0;
   for (ir=nalpha/2-4; ir<nalpha/2+4; ++ir){
@@ -737,7 +740,8 @@ void srcfunc_sca_1d(ctl_t *ctl,
     /* Get pencil beam radiance... */
     formod_pencil(ctl, atm, obs2, aero, scattering-1, ir);
   }
-  
+  if (Queue_Prepare == aero->queue_state) return;
+
   /* Get orthonormal basis (with respect to LOS)... */
   bascoord(dx, x, sx, sy, sz);  
   
@@ -750,13 +754,13 @@ void srcfunc_sca_1d(ctl_t *ctl,
   /* Loop over phase function angles... */
   for(itheta=0; itheta<ntheta2; itheta++) {
     
-    /* Set phase function angle in 1Â° steps (avoid 0 and 180Â°)... */
+    /* Set phase function angle in 1Â? steps (avoid 0 and 180Â?)... */
     theta2=(0.5+itheta)*M_PI/180.;
     
     /* Loop over azimuth angles... */
     for(iphi=0; iphi<nphi; iphi++) {
       
-      /* Set azimuth angle in 2Â° steps... */
+      /* Set azimuth angle in 2Â? steps... */
       phi=2.*(0.5+iphi)*M_PI/180.;
       
       /* Get unit vector on sphere... */

@@ -1,4 +1,6 @@
 #include "forwardmodel.h"
+#include "workqueue.h"
+#include <assert.h> /* assert */
 
 /*****************************************************************************/
 
@@ -32,16 +34,48 @@ void formod(ctl_t *ctl,
     get_opt_prop(ctl, aero);
   }
 
+  if (0) {
+    init_queue(&aero->queue, 1 << 20);
+    printf("# %s init queue with %d elements\n", __func__, aero->queue.capacity);
+    aero->queue_state = Queue_Prepare; /* activate the work queue */ 
+    printf("\n# %s start Queue_Prepare\n", __func__);
+  } else {
+    aero->queue_state = Queue_Inactive; /* deactivate the work queue */
+    printf("# %s Queue_Inactive\n", __func__);
+  }
+  
   /* Do first ray path sequential (to initialize model)... */
   formod_pencil(ctl, atm, obs, aero, ctl->sca_mult, 0);
   
 #ifdef _OPENMP
-#pragma omp parallel for schedule(dynamic) private(ir,id)
+/* #pragma omp parallel for schedule(dynamic) private(ir,id) */
 #endif
 
   /* Do remaining ray paths in parallel... */
   for(ir=1; ir<obs->nr; ir++){
     formod_pencil(ctl, atm, obs, aero, ctl->sca_mult, ir);
+  }
+  
+  if (Queue_Prepare == aero->queue_state) {
+    
+      if (1) { /* execute on CPU */
+        aero->queue_state = Queue_Execute;
+        printf("\n# %s start Queue_Execute [%d, %d) on CPU\n", __func__, 
+                 aero->queue.begin,      aero->queue.end);
+        for(id = aero->queue.begin; id < aero->queue.end; ++id) {
+          formod_pencil(ctl, atm, NULL, aero, 0, id); /* the work queue index id is passed via the ir argument */
+        } /* id-loop */
+      } else {
+          ERRMSG("No GPU version of formod_pencil implemented!");
+      }
+      
+      aero->queue_state = Queue_Collect;
+      printf("\n# %s start Queue_Collect\n", __func__);
+      for(ir=0; ir<obs->nr; ir++){
+        formod_pencil(ctl, atm, obs, aero, ctl->sca_mult, ir);
+      }
+      
+      aero->queue_state = Queue_Inactive; /* done */
   }
 
   /* Apply field-of-view convolution... */
@@ -167,59 +201,95 @@ void formod_fov(ctl_t *ctl,
 /*****************************************************************************/
 
 void formod_pencil(ctl_t *ctl,
-		   atm_t *atm,
-		   obs_t *obs,
-		   aero_t *aero,
-		   int scattering,
-		   int ir) {
-  
+                   atm_t *atm,
+                   obs_t *obs,
+                   aero_t *aero,
+                   int scattering,
+                   int ir) {
+
   static int init=0;
 
   static tbl_t *tbl;
-  
-  los_t *los;  
+
+  los_t *los;
+  obs_t *obs2;
   
   double beta_ctm[NDMAX], beta_ext_tot, dx[3], eps, src_all, src_planck[NDMAX],
     src_sca[NDMAX], tau_path[NGMAX][NDMAX], tau_gas[NDMAX], x[3], x0[3], x1[3];
-  
+
   int i, id, ip, ip0, ip1;
+
+#ifdef WORK_QUEUE
+  int const queue_mode = aero->queue_state << (0 == scattering);
+#else
+  int const queue_mode = Queue_Inactive; /* Queue_Inactive == -1 */
+#endif
+
+  printf("# %s(..., %p, aero, scattering=%d, ir=%d) queue_mode = %d;\n", __func__, (void*)obs, scattering, ir, queue_mode);
   
+if ((Queue_Collect|Queue_Prepare << 1|Queue_Prepare) & queue_mode) { /* CPp */
+  /* Allocate... */
+  ALLOC(los, los_t, 1);
+
+  /* Raytracing... */
+  raytrace(ctl, atm, obs, aero, los, ir);
+} /* CPp */
+
+if (Queue_Prepare << 1 == queue_mode) { /* Aap */
+  push_queue(&aero->queue, (void*)los, (void*)obs, ir); /* push input and pointer to output */
+  return;
+} /* Aap */
+
+if (Queue_Collect << 1 == queue_mode) { /* Aac */
+  pop_queue(&aero->queue, (void*)&los, (void*)&obs2, &ir); /* pop result */
+  /* Copy results... */
+  for(id=0; id<ctl->nd; id++) {
+    obs->rad[id][ir] = obs2->rad[id][ir];
+    obs->tau[id][ir] = obs2->tau[id][ir];
+  } /* id */
+  return;
+} /* Aac */
+
+if (Queue_Execute << 1 == queue_mode) { /* Aax */
+  get_queue_item(&aero->queue, (void*)&los, (void*)&obs, &ir, ir); /* get input */
+} /* Aax */
+
+if ((Queue_Collect|Queue_Execute << 1) & queue_mode) { /* Cx */
   /* Read tables... */
   if(!init) {
     init=1;
     printf("Allocate memory for tables: %.4g MB\n",
-	   (double)sizeof(tbl_t)/1024./1024.);
+           (double)sizeof(tbl_t)/1024./1024.);
     ALLOC(tbl, tbl_t, 1);
     read_tbl(ctl, tbl);
   }
-  
-  /* Allocate... */
-  ALLOC(los, los_t, 1);
-  
+
   /* Initialize... */
   for(id=0; id<ctl->nd; id++) {
     obs->rad[id][ir]=0;
     obs->tau[id][ir]=1;
   }
-  
-  /* Raytracing... */
-  raytrace(ctl, atm, obs, aero, los, ir);
-  
+} /* Cx */
+
+
   /* Loop over LOS points... */
   for(ip=0; ip<los->np; ip++) {
-    
+
+if ((Queue_Collect|Queue_Execute << 1) & queue_mode) { /* Cx */
     /* Get trace gas transmittance... */
     intpol_tbl(ctl, tbl, los, ip, tau_path, tau_gas);
-    
+
     /* Get continuum absorption... */
     formod_continua(ctl, los, ip, beta_ctm);
-    
+
     /* Compute Planck function... */
     srcfunc_planck(ctl, los->t[ip], src_planck);
-  
+} /* Cx */
+
     /* Compute radiative transfer with scattering source... */
-    if(los->aerofac[ip]>0 && scattering>0) {
-      
+    if(scattering>0 && los->aerofac[ip]>0) {
+
+if ((Queue_Collect|Queue_Prepare) & queue_mode) { /* CP */
       /* Compute scattering source term... */
       geo2cart(los->z[ip], los->lon[ip], los->lat[ip], x);
       ip0=(ip>0 ? ip-1 : ip);
@@ -227,67 +297,73 @@ void formod_pencil(ctl_t *ctl,
       geo2cart(los->z[ip0], los->lon[ip0], los->lat[ip0], x0);
       geo2cart(los->z[ip1], los->lon[ip1], los->lat[ip1], x1);
       for(i=0; i<3; i++)
-	dx[i]=x1[i]-x0[i];
+        dx[i]=x1[i]-x0[i];
 
       srcfunc_sca(ctl,atm,aero,obs->time[ir],x,dx,los->aeroi[ip],src_sca,scattering);
+} /* CP */
 
+if ((Queue_Collect) & queue_mode) { /* C */
       /* Loop over channels... */
       for(id=0; id<ctl->nd; id++)
-	if(tau_gas[id]>0) {
+        if(tau_gas[id]>0) {
 
-	  /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-	  /* Get gas and aerosol/cloud extinctions... */
-	  beta_ext_tot = (-1.)*log(tau_gas[id])/los->ds[ip] + beta_ctm[id] + 
-	                 los->aerofac[ip]*aero->beta_e[los->aeroi[ip]][id]; 
-	  
-	  /* enthält tau_gas bereits k????????? */
+          /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+          /* Get gas and aerosol/cloud extinctions... */
+          beta_ext_tot = (-1.)*log(tau_gas[id])/los->ds[ip] + beta_ctm[id] +
+                         los->aerofac[ip]*aero->beta_e[los->aeroi[ip]][id];
 
-	  /* Get segment emissivity */
-	  eps = 1-exp(-1*beta_ext_tot*los->ds[ip]);
-	  
-	  /* Compute weighted segment source */
-	  src_all=((beta_ext_tot - los->aerofac[ip]*aero->beta_s[los->aeroi[ip]][id]) * 
-	  	   src_planck[id] +  
-	  	   los->aerofac[ip]*aero->beta_s[los->aeroi[ip]][id]*src_sca[id]) / 
+          /* enthält tau_gas bereits k????????? */
+
+          /* Get segment emissivity */
+          eps = 1-exp(-1*beta_ext_tot*los->ds[ip]);
+
+          /* Compute weighted segment source */
+          src_all=((beta_ext_tot - los->aerofac[ip]*aero->beta_s[los->aeroi[ip]][id]) *
+                   src_planck[id] +
+                   los->aerofac[ip]*aero->beta_s[los->aeroi[ip]][id]*src_sca[id]) /
                   beta_ext_tot;
 
-	  /* Compute radiance: path extinction * segment emissivity * segment source */
-	  obs->rad[id][ir] += obs->tau[id][ir]*eps*src_all;
+          /* Compute radiance: path extinction * segment emissivity * segment source */
+          obs->rad[id][ir] += obs->tau[id][ir]*eps*src_all;
 
-	  /* Compute path transmittance... */
-	  obs->tau[id][ir] *= exp(-1.*beta_ext_tot*los->ds[ip]);
-	}
+          /* Compute path transmittance... */
+          obs->tau[id][ir] *= exp(-1.*beta_ext_tot*los->ds[ip]);
+        }
+} /* C */
     }
-    
+
     /* Compute radiative transfer without scattering source... */
     else {
 
+if ((Queue_Collect|Queue_Execute << 1) & queue_mode) { /* Cx */
       /* Loop over channels... */
       for(id=0; id<ctl->nd; id++)
-	if(tau_gas[id]>0) {
+        if(tau_gas[id]>0) {
 
-	  /* Get segment emissivity... */
-	  if (ctl->sca_n==0 || los->aerofac[ip]==0 ) {
-	    eps=1-tau_gas[id]*exp(-1. * beta_ctm[id] * los->ds[ip]);
-	  }
-	  else if (strcmp(ctl->sca_ext, "beta_a") == 0) {
-	    
-	    eps=1-tau_gas[id]*exp(-1. * (beta_ctm[id] + los->aerofac[ip]*
-					 aero->beta_a[los->aeroi[ip]][id])*los->ds[ip]);  
-	  } else {
-	    eps=1-tau_gas[id]*exp(-1. * (beta_ctm[id] + los->aerofac[ip]*
-					 aero->beta_e[los->aeroi[ip]][id])*los->ds[ip]);
-	  }
-	  
-	  /* Compute radiance... */
-	  obs->rad[id][ir]+=src_planck[id]*eps*obs->tau[id][ir];
-	  
-	  /* Compute path transmittance... */
-	  obs->tau[id][ir]*=(1-eps);
-	}
+          /* Get segment emissivity... */
+          if (ctl->sca_n==0 || los->aerofac[ip]==0 ) {
+            eps=1-tau_gas[id]*exp(-1. * beta_ctm[id] * los->ds[ip]);
+          }
+          else if (strcmp(ctl->sca_ext, "beta_a") == 0) {
+
+            eps=1-tau_gas[id]*exp(-1. * (beta_ctm[id] + los->aerofac[ip]*
+                                         aero->beta_a[los->aeroi[ip]][id])*los->ds[ip]);
+          } else {
+            eps=1-tau_gas[id]*exp(-1. * (beta_ctm[id] + los->aerofac[ip]*
+                                         aero->beta_e[los->aeroi[ip]][id])*los->ds[ip]);
+          }
+
+          /* Compute radiance... */
+          obs->rad[id][ir]+=src_planck[id]*eps*obs->tau[id][ir];
+
+          /* Compute path transmittance... */
+          obs->tau[id][ir]*=(1-eps);
+        }
     }
+} /* Cx */
   }
 
+if ((Queue_Collect|Queue_Execute << 1) & queue_mode) { /* Cx */
   /* Add surface... */
   if(los->tsurf>0) {
     srcfunc_planck(ctl, los->tsurf, src_planck);
@@ -297,6 +373,8 @@ void formod_pencil(ctl_t *ctl,
 
   /* Free... */
   free(los);
+} /* Cx */
+
 }
 
 /*****************************************************************************/

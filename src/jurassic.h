@@ -19,6 +19,8 @@
 #ifdef MPI
 #include <mpi.h>
 #endif
+#include "workqueue.h" /* queue_t */
+
 /* ------------------------------------------------------------
    Macros...
    ------------------------------------------------------------ */
@@ -527,6 +529,10 @@ typedef struct {
   /* Phase function for each layer, angle and wave number */
   double p[NLMAX][NDMAX][NTHETA];
 
+  /* work queue architecture introduced for GPU acceleration */
+  int queue_state;
+  queue_t queue;
+  
  } aero_t;
 
 /* Atmospheric data. */
