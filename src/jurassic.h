@@ -19,6 +19,8 @@
 #ifdef MPI
 #include <mpi.h>
 #endif
+#include "workqueue.h" /* queue_t */
+
 /* ------------------------------------------------------------
    Macros...
    ------------------------------------------------------------ */
@@ -339,6 +341,9 @@ typedef struct {
   
   /* Write matrix data (0=no, 1=yes). */
   int write_matrix;
+  
+  /* work queue architecture introduced for GPU acceleration */
+  queue_t queue;
   
 } ctl_t;
 /* ------------------------------------------------------------*/

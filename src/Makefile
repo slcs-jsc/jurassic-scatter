@@ -47,6 +47,9 @@ endif
 # endif
 # -----------------------------------------------------------------------------
 
+CFLAGS += -D WORK_QUEUE
+
+
 # Flags for profiling...
 ifdef PROF
 CFLAGS += -O2 -g -pg
@@ -64,8 +67,8 @@ LDFLAGS = $(LIBDIR) -lgsl -lgslcblas -lm
 all: $(EXC)
 	rm -f *~
 
-$(EXC): %: %.c  atmosphere.o continua.o control.o forwardmodel.o lineofsight.o misc.o retrievalmodel.o scatter.o Makefile
-	$(CC) $(CFLAGS) -o $@ $< atmosphere.o continua.o control.o forwardmodel.o lineofsight.o misc.o retrievalmodel.o scatter.o  $(LDFLAGS)
+$(EXC): %: %.c  atmosphere.o continua.o control.o forwardmodel.o lineofsight.o misc.o retrievalmodel.o workqueue.o scatter.o Makefile
+	$(CC) $(CFLAGS) -o $@ $< atmosphere.o continua.o control.o forwardmodel.o lineofsight.o misc.o retrievalmodel.o workqueue.o scatter.o  $(LDFLAGS)
 
 atmosphere.o: atmosphere.c 
 	$(CC) $(CFLAGS) -c atmosphere.c
@@ -90,6 +93,9 @@ retrievalmodel.o: retrievalmodel.c
 
 scatter.o: scatter.c 
 	$(CC) $(CFLAGS) -c scatter.c
+
+workqueue.o: workqueue.c 
+	$(CC) $(CFLAGS) -c workqueue.c
 
 
 

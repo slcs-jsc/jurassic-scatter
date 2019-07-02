@@ -1,4 +1,6 @@
 #include "forwardmodel.h"
+#include "workqueue.h" /* Queue_Inactive, Queue_Prepare, Queue_Execute, Queue_Execute */
+#include <assert.h> /* assert */
 
 /*****************************************************************************/
 
@@ -18,6 +20,7 @@ void formod(ctl_t *ctl,
   static int mask[NDMAX][NRMAX];
   
   int id, ir;
+  int begin, end;
   
   /* Save observation mask... */
   for(id=0; id<ctl->nd; id++)
@@ -32,16 +35,68 @@ void formod(ctl_t *ctl,
     get_opt_prop(ctl, aero);
   }
 
+  if (ctl->queue.capacity > 0) { /* switch usage of queue on by setting MAX_QUEUE > 0 */
+    init_queue(&ctl->queue, ctl->queue.capacity);
+    printf("# %s init queue with %d elements\n", __func__, ctl->queue.capacity);
+    /*
+     *  Work Queue Architecture with three stages:
+     *    Pp Prepare constructs the multiple scattering tree 
+     *               and pushes work items into a queue
+     *    x  Execute performs the work in the queue (lowest 
+     *               tree level) without further scattering
+     *    Cc Collect traverses the tree again and collects
+     *               the results
+     */
+    ctl->queue.state = Queue_Prepare; /* activate the work queue */ 
+    printf("# %s start Queue_Prepare\n", __func__);
+  } else {
+    ctl->queue.state = Queue_Inactive; /* deactivate the work queue */
+    printf("# %s Queue_Inactive\n", __func__);
+  }
+
   /* Do first ray path sequential (to initialize model)... */
   formod_pencil(ctl, atm, obs, aero, ctl->sca_mult, 0);
   
 #ifdef _OPENMP
-#pragma omp parallel for schedule(dynamic) private(ir,id)
+#pragma omp parallel for schedule(dynamic) private(ir,id) \
+            if(Queue_Inactive == ctl->queue.state)
 #endif
 
   /* Do remaining ray paths in parallel... */
   for(ir=1; ir<obs->nr; ir++){
     formod_pencil(ctl, atm, obs, aero, ctl->sca_mult, ir);
+  }
+  
+  if (Queue_Prepare == ctl->queue.state) {
+    
+      if (1) { /* execute on CPU */
+        ctl->queue.state = Queue_Execute;
+        begin = ctl->queue.begin;
+        end   = ctl->queue.end;
+        printf("# %s start Queue_Execute [%d, %d) on CPU\n", __func__, begin, end);
+        /* Do first ray path sequential (to initialize model)... */
+        for(ir = begin; ir < begin + 1; ++ir) {
+          formod_pencil(ctl, atm, NULL, aero, 0, ir);
+        } /* ir-loop */
+#ifdef _OPENMP
+#pragma omp parallel for schedule(dynamic) private(ir)
+#endif
+        /* Do remaining ray paths in parallel... */
+        for(ir = begin + 1; ir < end; ++ir) {
+          formod_pencil(ctl, atm, NULL, aero, 0, ir);
+        } /* ir-loop */
+      } else {
+          ERRMSG("No GPU version of formod_pencil implemented!");
+      }
+      
+      ctl->queue.state = Queue_Collect;
+      printf("# %s start Queue_Collect\n", __func__);
+      for(ir=0; ir<obs->nr; ir++){
+        formod_pencil(ctl, atm, obs, aero, ctl->sca_mult, ir);
+      }
+
+      init_queue(&ctl->queue, -1); /* free queue resources */
+      ctl->queue.state = Queue_Inactive; /* done */
   }
 
   /* Apply field-of-view convolution... */
@@ -167,59 +222,101 @@ void formod_fov(ctl_t *ctl,
 /*****************************************************************************/
 
 void formod_pencil(ctl_t *ctl,
-		   atm_t *atm,
-		   obs_t *obs,
-		   aero_t *aero,
-		   int scattering,
-		   int ir) {
-  
+                   atm_t *atm,
+                   obs_t *obs,
+                   aero_t *aero,
+                   int scattering,
+                   int ir) {
+
   static int init=0;
 
   static tbl_t *tbl;
-  
-  los_t *los;  
+
+  los_t *los;
+  obs_t *obs2;
   
   double beta_ctm[NDMAX], beta_ext_tot, dx[3], eps, src_all, src_planck[NDMAX],
     src_sca[NDMAX], tau_path[NGMAX][NDMAX], tau_gas[NDMAX], x[3], x0[3], x1[3];
-  
+
   int i, id, ip, ip0, ip1;
+
+  int const Queue_Prepare_Leaf = Queue_Prepare << 1;
+  int const Queue_Execute_Leaf = Queue_Execute << 1;
+  int const Queue_Collect_Leaf = Queue_Collect << 1;
+#ifdef WORK_QUEUE
+  int const queue_mode = ctl->queue.state << (0 == scattering);
+#else
+  int const queue_mode = Queue_Inactive; /* Queue_Inactive == -1 */
+#endif
+
+#ifdef  FORMOD_DEBUG
+  printf("# %s(..., %p, aero, scattering=%d, ir=%d) queue_mode = %d;\n", __func__, (void*)obs, scattering, ir, queue_mode);
+#endif 
   
+if ((Queue_Collect|Queue_Prepare_Leaf|Queue_Prepare) & queue_mode) { /* CPp */
+  /* Allocate... */
+  ALLOC(los, los_t, 1);
+
+  /* Raytracing... */
+  raytrace(ctl, atm, obs, aero, los, ir);
+} /* CPp */
+
+if (Queue_Prepare_Leaf == queue_mode) { /* ==p */
+  i = push_queue(&ctl->queue, (void*)los, (void*)obs, ir); /* push input and pointer to output */
+  if (i < 0) ERRMSG("Too many queue items!"); /* failed */
+  return;
+} /* ==p */
+
+if (Queue_Collect_Leaf == queue_mode) { /* ==c */
+  pop_queue(&ctl->queue, (void*)&los, (void*)&obs2, &ir); /* pop result */
+  /* Copy results... */
+  for(id=0; id<ctl->nd; id++) {
+    obs->rad[id][ir] = obs2->rad[id][ir];
+    obs->tau[id][ir] = obs2->tau[id][ir];
+  } /* id */
+  return;
+} /* ==c */
+
+if (Queue_Execute_Leaf == queue_mode) { /* ==x */
+  get_queue_item(&ctl->queue, (void*)&los, (void*)&obs, &ir, ir); /* get input */
+} /* ==x */
+
+if ((Queue_Collect|Queue_Execute_Leaf) & queue_mode) { /* Cx */
   /* Read tables... */
   if(!init) {
     init=1;
     printf("Allocate memory for tables: %.4g MB\n",
-	   (double)sizeof(tbl_t)/1024./1024.);
+           (double)sizeof(tbl_t)/1024./1024.);
     ALLOC(tbl, tbl_t, 1);
     read_tbl(ctl, tbl);
   }
-  
-  /* Allocate... */
-  ALLOC(los, los_t, 1);
-  
+
   /* Initialize... */
   for(id=0; id<ctl->nd; id++) {
     obs->rad[id][ir]=0;
     obs->tau[id][ir]=1;
   }
-  
-  /* Raytracing... */
-  raytrace(ctl, atm, obs, aero, los, ir);
-  
+} /* Cx */
+
+
   /* Loop over LOS points... */
   for(ip=0; ip<los->np; ip++) {
-    
+
+if ((Queue_Collect|Queue_Execute_Leaf) & queue_mode) { /* Cx */
     /* Get trace gas transmittance... */
     intpol_tbl(ctl, tbl, los, ip, tau_path, tau_gas);
-    
+
     /* Get continuum absorption... */
     formod_continua(ctl, los, ip, beta_ctm);
-    
+
     /* Compute Planck function... */
     srcfunc_planck(ctl, los->t[ip], src_planck);
-  
+} /* Cx */
+
     /* Compute radiative transfer with scattering source... */
-    if(los->aerofac[ip]>0 && scattering>0) {
-      
+    if(scattering>0 && los->aerofac[ip]>0) {
+
+if ((Queue_Collect|Queue_Prepare) & queue_mode) { /* CP */
       /* Compute scattering source term... */
       geo2cart(los->z[ip], los->lon[ip], los->lat[ip], x);
       ip0=(ip>0 ? ip-1 : ip);
@@ -227,67 +324,73 @@ void formod_pencil(ctl_t *ctl,
       geo2cart(los->z[ip0], los->lon[ip0], los->lat[ip0], x0);
       geo2cart(los->z[ip1], los->lon[ip1], los->lat[ip1], x1);
       for(i=0; i<3; i++)
-	dx[i]=x1[i]-x0[i];
+        dx[i]=x1[i]-x0[i];
 
       srcfunc_sca(ctl,atm,aero,obs->time[ir],x,dx,los->aeroi[ip],src_sca,scattering);
+} /* CP */
 
+if ((Queue_Collect) & queue_mode) { /* C */
       /* Loop over channels... */
       for(id=0; id<ctl->nd; id++)
-	if(tau_gas[id]>0) {
+        if(tau_gas[id]>0) {
 
-	  /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-	  /* Get gas and aerosol/cloud extinctions... */
-	  beta_ext_tot = (-1.)*log(tau_gas[id])/los->ds[ip] + beta_ctm[id] + 
-	                 los->aerofac[ip]*aero->beta_e[los->aeroi[ip]][id]; 
-	  
-	  /* enthält tau_gas bereits k????????? */
+          /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+          /* Get gas and aerosol/cloud extinctions... */
+          beta_ext_tot = (-1.)*log(tau_gas[id])/los->ds[ip] + beta_ctm[id] +
+                         los->aerofac[ip]*aero->beta_e[los->aeroi[ip]][id];
 
-	  /* Get segment emissivity */
-	  eps = 1-exp(-1*beta_ext_tot*los->ds[ip]);
-	  
-	  /* Compute weighted segment source */
-	  src_all=((beta_ext_tot - los->aerofac[ip]*aero->beta_s[los->aeroi[ip]][id]) * 
-	  	   src_planck[id] +  
-	  	   los->aerofac[ip]*aero->beta_s[los->aeroi[ip]][id]*src_sca[id]) / 
+          /* enthält tau_gas bereits k????????? */
+
+          /* Get segment emissivity */
+          eps = 1-exp(-1*beta_ext_tot*los->ds[ip]);
+
+          /* Compute weighted segment source */
+          src_all=((beta_ext_tot - los->aerofac[ip]*aero->beta_s[los->aeroi[ip]][id]) *
+                   src_planck[id] +
+                   los->aerofac[ip]*aero->beta_s[los->aeroi[ip]][id]*src_sca[id]) /
                   beta_ext_tot;
 
-	  /* Compute radiance: path extinction * segment emissivity * segment source */
-	  obs->rad[id][ir] += obs->tau[id][ir]*eps*src_all;
+          /* Compute radiance: path extinction * segment emissivity * segment source */
+          obs->rad[id][ir] += obs->tau[id][ir]*eps*src_all;
 
-	  /* Compute path transmittance... */
-	  obs->tau[id][ir] *= exp(-1.*beta_ext_tot*los->ds[ip]);
-	}
+          /* Compute path transmittance... */
+          obs->tau[id][ir] *= exp(-1.*beta_ext_tot*los->ds[ip]);
+        }
+} /* C */
     }
-    
+
     /* Compute radiative transfer without scattering source... */
     else {
 
+if ((Queue_Collect|Queue_Execute_Leaf) & queue_mode) { /* Cx */
       /* Loop over channels... */
       for(id=0; id<ctl->nd; id++)
-	if(tau_gas[id]>0) {
+        if(tau_gas[id]>0) {
 
-	  /* Get segment emissivity... */
-	  if (ctl->sca_n==0 || los->aerofac[ip]==0 ) {
-	    eps=1-tau_gas[id]*exp(-1. * beta_ctm[id] * los->ds[ip]);
-	  }
-	  else if (strcmp(ctl->sca_ext, "beta_a") == 0) {
-	    
-	    eps=1-tau_gas[id]*exp(-1. * (beta_ctm[id] + los->aerofac[ip]*
-					 aero->beta_a[los->aeroi[ip]][id])*los->ds[ip]);  
-	  } else {
-	    eps=1-tau_gas[id]*exp(-1. * (beta_ctm[id] + los->aerofac[ip]*
-					 aero->beta_e[los->aeroi[ip]][id])*los->ds[ip]);
-	  }
-	  
-	  /* Compute radiance... */
-	  obs->rad[id][ir]+=src_planck[id]*eps*obs->tau[id][ir];
-	  
-	  /* Compute path transmittance... */
-	  obs->tau[id][ir]*=(1-eps);
-	}
+          /* Get segment emissivity... */
+          if (ctl->sca_n==0 || los->aerofac[ip]==0 ) {
+            eps=1-tau_gas[id]*exp(-1. * beta_ctm[id] * los->ds[ip]);
+          }
+          else if (strcmp(ctl->sca_ext, "beta_a") == 0) {
+
+            eps=1-tau_gas[id]*exp(-1. * (beta_ctm[id] + los->aerofac[ip]*
+                                         aero->beta_a[los->aeroi[ip]][id])*los->ds[ip]);
+          } else {
+            eps=1-tau_gas[id]*exp(-1. * (beta_ctm[id] + los->aerofac[ip]*
+                                         aero->beta_e[los->aeroi[ip]][id])*los->ds[ip]);
+          }
+
+          /* Compute radiance... */
+          obs->rad[id][ir]+=src_planck[id]*eps*obs->tau[id][ir];
+
+          /* Compute path transmittance... */
+          obs->tau[id][ir]*=(1-eps);
+        }
     }
+} /* Cx */
   }
 
+if ((Queue_Collect|Queue_Execute_Leaf) & queue_mode) { /* Cx */
   /* Add surface... */
   if(los->tsurf>0) {
     srcfunc_planck(ctl, los->tsurf, src_planck);
@@ -297,6 +400,8 @@ void formod_pencil(ctl_t *ctl,
 
   /* Free... */
   free(los);
+} /* Cx */
+
 }
 
 /*****************************************************************************/
