@@ -1,5 +1,5 @@
 #include "forwardmodel.h"
-#include "workqueue.h"
+#include "workqueue.h" /* Queue_Inactive, Queue_Prepare, Queue_Execute, Queue_Execute */
 #include <assert.h> /* assert */
 
 /*****************************************************************************/
@@ -35,22 +35,31 @@ void formod(ctl_t *ctl,
     get_opt_prop(ctl, aero);
   }
 
-  if (1) { /* switch usage of queue on(1) and off(0) here */
-    init_queue(&aero->queue, 1 << 20);
-    printf("# %s init queue with %d elements\n", __func__, aero->queue.capacity);
-    aero->queue.state = Queue_Prepare; /* activate the work queue */ 
+  if (ctl->queue.capacity > 0) { /* switch usage of queue on by setting MAX_QUEUE > 0 */
+    init_queue(&ctl->queue, ctl->queue.capacity);
+    printf("# %s init queue with %d elements\n", __func__, ctl->queue.capacity);
+    /*
+     *  Work Queue Architecture with three stages:
+     *    Pp Prepare constructs the multiple scattering tree 
+     *               and pushes work items into a queue
+     *    x  Execute performs the work in the queue (lowest 
+     *               tree level) without further scattering
+     *    Cc Collect traverses the tree again and collects
+     *               the results
+     */
+    ctl->queue.state = Queue_Prepare; /* activate the work queue */ 
     printf("# %s start Queue_Prepare\n", __func__);
   } else {
-    aero->queue.state = Queue_Inactive; /* deactivate the work queue */
+    ctl->queue.state = Queue_Inactive; /* deactivate the work queue */
     printf("# %s Queue_Inactive\n", __func__);
   }
-  
+
   /* Do first ray path sequential (to initialize model)... */
   formod_pencil(ctl, atm, obs, aero, ctl->sca_mult, 0);
   
 #ifdef _OPENMP
 #pragma omp parallel for schedule(dynamic) private(ir,id) \
-            if(Queue_Inactive == aero->queue.state)
+            if(Queue_Inactive == ctl->queue.state)
 #endif
 
   /* Do remaining ray paths in parallel... */
@@ -58,36 +67,36 @@ void formod(ctl_t *ctl,
     formod_pencil(ctl, atm, obs, aero, ctl->sca_mult, ir);
   }
   
-  if (Queue_Prepare == aero->queue.state) {
+  if (Queue_Prepare == ctl->queue.state) {
     
       if (1) { /* execute on CPU */
-        aero->queue.state = Queue_Execute;
-        begin = aero->queue.begin;
-        end   = aero->queue.end;
+        ctl->queue.state = Queue_Execute;
+        begin = ctl->queue.begin;
+        end   = ctl->queue.end;
         printf("# %s start Queue_Execute [%d, %d) on CPU\n", __func__, begin, end);
         /* Do first ray path sequential (to initialize model)... */
-        for(id = begin; id < begin + 1; ++id) {
-          formod_pencil(ctl, atm, NULL, aero, 0, id); /* the work queue index id is passed via the ir argument */
-        } /* id-loop */
+        for(ir = begin; ir < begin + 1; ++ir) {
+          formod_pencil(ctl, atm, NULL, aero, 0, ir);
+        } /* ir-loop */
 #ifdef _OPENMP
-#pragma omp parallel for schedule(dynamic) private(id)
+#pragma omp parallel for schedule(dynamic) private(ir)
 #endif
         /* Do remaining ray paths in parallel... */
-        for(id = begin + 1; id < end; ++id) {
-          formod_pencil(ctl, atm, NULL, aero, 0, id); /* the work queue index id is passed via the ir argument */
-        } /* id-loop */
+        for(ir = begin + 1; ir < end; ++ir) {
+          formod_pencil(ctl, atm, NULL, aero, 0, ir);
+        } /* ir-loop */
       } else {
           ERRMSG("No GPU version of formod_pencil implemented!");
       }
       
-      aero->queue.state = Queue_Collect;
+      ctl->queue.state = Queue_Collect;
       printf("# %s start Queue_Collect\n", __func__);
       for(ir=0; ir<obs->nr; ir++){
         formod_pencil(ctl, atm, obs, aero, ctl->sca_mult, ir);
       }
 
-      init_queue(&aero->queue, -1); /* free resources */
-      aero->queue.state = Queue_Inactive; /* done */
+      init_queue(&ctl->queue, -1); /* free queue resources */
+      ctl->queue.state = Queue_Inactive; /* done */
   }
 
   /* Apply field-of-view convolution... */
@@ -235,7 +244,7 @@ void formod_pencil(ctl_t *ctl,
   int const Queue_Execute_Leaf = Queue_Execute << 1;
   int const Queue_Collect_Leaf = Queue_Collect << 1;
 #ifdef WORK_QUEUE
-  int const queue_mode = aero->queue.state << (0 == scattering);
+  int const queue_mode = ctl->queue.state << (0 == scattering);
 #else
   int const queue_mode = Queue_Inactive; /* Queue_Inactive == -1 */
 #endif
@@ -252,25 +261,25 @@ if ((Queue_Collect|Queue_Prepare_Leaf|Queue_Prepare) & queue_mode) { /* CPp */
   raytrace(ctl, atm, obs, aero, los, ir);
 } /* CPp */
 
-if (Queue_Prepare_Leaf == queue_mode) { /* Aap */
-  i = push_queue(&aero->queue, (void*)los, (void*)obs, ir); /* push input and pointer to output */
-  if (i < 0) ERRMSG("Too many queue items!");
+if (Queue_Prepare_Leaf == queue_mode) { /* ==p */
+  i = push_queue(&ctl->queue, (void*)los, (void*)obs, ir); /* push input and pointer to output */
+  if (i < 0) ERRMSG("Too many queue items!"); /* failed */
   return;
-} /* Aap */
+} /* ==p */
 
-if (Queue_Collect_Leaf == queue_mode) { /* Aac */
-  pop_queue(&aero->queue, (void*)&los, (void*)&obs2, &ir); /* pop result */
+if (Queue_Collect_Leaf == queue_mode) { /* ==c */
+  pop_queue(&ctl->queue, (void*)&los, (void*)&obs2, &ir); /* pop result */
   /* Copy results... */
   for(id=0; id<ctl->nd; id++) {
     obs->rad[id][ir] = obs2->rad[id][ir];
     obs->tau[id][ir] = obs2->tau[id][ir];
   } /* id */
   return;
-} /* Aac */
+} /* ==c */
 
-if (Queue_Execute_Leaf == queue_mode) { /* Aax */
-  get_queue_item(&aero->queue, (void*)&los, (void*)&obs, &ir, ir); /* get input */
-} /* Aax */
+if (Queue_Execute_Leaf == queue_mode) { /* ==x */
+  get_queue_item(&ctl->queue, (void*)&los, (void*)&obs, &ir, ir); /* get input */
+} /* ==x */
 
 if ((Queue_Collect|Queue_Execute_Leaf) & queue_mode) { /* Cx */
   /* Read tables... */

@@ -15,6 +15,7 @@ TBLBASE = tab/boxcar
 SCA_N = 6
 SCA_MULT = 1
 
+MAX_QUEUE = 1e5
 
 # Atmosphere/Climatology
 DZ = 1
@@ -22,6 +23,6 @@ ZMAX = 80
 ZMIN = 0 
 CLIMPATH = ../clim/clim_remedios.tab
 
-#diese Eingabe ist auch m√∂glich, aber nicht wirklich n√∂tig
+#diese Eingabe ist auch m√?glich, aber nicht wirklich n√?tig
 #DIRLIST = dirlist-aero.asc
 #AEROFILE = aero.tab

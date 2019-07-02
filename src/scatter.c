@@ -1,5 +1,5 @@
 #include "scatter.h"
-#include "workqueue.h"
+#include "workqueue.h" /* Queue_Prepare */
 
 /*****************************************************************************/
 
@@ -738,7 +738,7 @@ void srcfunc_sca_1d(ctl_t *ctl,
     /* Get pencil beam radiance... */
     formod_pencil(ctl, atm, obs2, aero, scattering-1, ir);
   }
-  if (Queue_Prepare == aero->queue.state) return;
+  if (Queue_Prepare == ctl->queue.state) return; /* prepare work queue items only */
   
   /* Get orthonormal basis (with respect to LOS)... */
   bascoord(dx, x, sx, sy, sz);  
@@ -884,6 +884,7 @@ void srcfunc_sca_3d(ctl_t *ctl,
       }
     }
   }
+  if (Queue_Prepare == ctl->queue.state) return; /* prepare work queue items only */
   
   /* Normalize... */
   for(id=0; id<ctl->nd; id++)

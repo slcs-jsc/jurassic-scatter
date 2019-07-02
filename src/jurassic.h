@@ -342,6 +342,9 @@ typedef struct {
   /* Write matrix data (0=no, 1=yes). */
   int write_matrix;
   
+  /* work queue architecture introduced for GPU acceleration */
+  queue_t queue;
+  
 } ctl_t;
 /* ------------------------------------------------------------*/
 
@@ -529,9 +532,6 @@ typedef struct {
   /* Phase function for each layer, angle and wave number */
   double p[NLMAX][NDMAX][NTHETA];
 
-  /* work queue architecture introduced for GPU acceleration */
-  queue_t queue;
-  
  } aero_t;
 
 /* Atmospheric data. */
