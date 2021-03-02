@@ -1,4 +1,5 @@
 # jurassic-scatter
+
 The JUelich RApid Spectral SImulation Code with scattering is based on JURASSIC 
 (https://github.com/slcs-jsc/jurassic), but was a bit reorganized to include modules 
 that allow simulations with scattering on aerosol and cloud particles.
@@ -10,6 +11,7 @@ that allow simulations with scattering on aerosol and cloud particles.
 ![GitHub](https://img.shields.io/github/license/slcs-jsc/jurassic-scatter.svg)
 
 ## Short Description
+
 The Juelich Rapid Spectral Simulation Code (JURASSIC) is a fast radiative transfer
 model for the mid-infrared spectral region (Hoffmann, 2006). It was used in several
 studies for the infrared limb sounder Michelson Interferometer for Passive Atmospheric
