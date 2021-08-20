@@ -1,4 +1,5 @@
 #include "scatter.h"
+#include "workqueue.h" /* Queue_Prepare */
 
 /*****************************************************************************/
 
@@ -737,6 +738,7 @@ void srcfunc_sca_1d(ctl_t *ctl,
     /* Get pencil beam radiance... */
     formod_pencil(ctl, atm, obs2, aero, scattering-1, ir);
   }
+  if (Queue_Prepare == ctl->queue.state) return; /* prepare work queue items only */
   
   /* Get orthonormal basis (with respect to LOS)... */
   bascoord(dx, x, sx, sy, sz);  
@@ -750,13 +752,13 @@ void srcfunc_sca_1d(ctl_t *ctl,
   /* Loop over phase function angles... */
   for(itheta=0; itheta<ntheta2; itheta++) {
     
-    /* Set phase function angle in 1Â° steps (avoid 0 and 180Â°)... */
+    /* Set phase function angle in 1Â? steps (avoid 0 and 180Â?)... */
     theta2=(0.5+itheta)*M_PI/180.;
     
     /* Loop over azimuth angles... */
     for(iphi=0; iphi<nphi; iphi++) {
       
-      /* Set azimuth angle in 2Â° steps... */
+      /* Set azimuth angle in 2Â? steps... */
       phi=2.*(0.5+iphi)*M_PI/180.;
       
       /* Get unit vector on sphere... */
@@ -882,6 +884,7 @@ void srcfunc_sca_3d(ctl_t *ctl,
       }
     }
   }
+  if (Queue_Prepare == ctl->queue.state) return; /* prepare work queue items only */
   
   /* Normalize... */
   for(id=0; id<ctl->nd; id++)
